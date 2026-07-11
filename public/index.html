@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#141019" />
+    <title>The Diary of T. M. Riddle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="book">
+      <div class="page" id="page">
+        <!-- Handwriting canvas (your ink) -->
+        <canvas id="ink" class="ink"></canvas>
+
+        <!-- The page's answer, in a flowing hand -->
+        <div id="reply" class="reply" aria-live="polite"></div>
+
+        <!-- Faint prompt shown when the page is empty -->
+        <div id="hint" class="hint">Write upon the page…</div>
+
+        <!-- The page "considering" your words -->
+        <div id="think" class="think" hidden>
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <footer class="foot">
+        <span class="foot-name">T. M. Riddle</span>
+        <span class="foot-sep">·</span>
+        <span>the page keeps nothing</span>
+      </footer>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

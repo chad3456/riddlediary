@@ -1,0 +1,20 @@
+{
+  "name": "riddle-diary",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Diary of Tom Riddle — write with your hand, the page drinks your ink and answers in a flowing hand. Powered by Claude. Stores nothing, remembers nothing.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
