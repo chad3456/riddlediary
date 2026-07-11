@@ -1,0 +1,16 @@
+# One-click deploy to Render → gives you a public https URL.
+# 1. Push this repo to GitHub (already done).
+# 2. Go to https://render.com → New → Blueprint → pick this repo.
+# 3. When prompted, paste your ANTHROPIC_API_KEY (kept secret, never in the repo).
+# Render sets PORT automatically; server.js already reads it.
+services:
+  - type: web
+    name: riddle-diary
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: true
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false

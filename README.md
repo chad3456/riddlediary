@@ -23,6 +23,22 @@ npm start
 
 Open **http://localhost:3000** — on a phone, open it in the browser and "Add to Home Screen" for a full-screen, app-like experience.
 
+## Get a shareable link (real Claude answers)
+
+A published Claude **artifact cannot do this** — artifacts run with no network
+access and no built-in AI, so they can only return canned text. Real, varied,
+in-character answers require this small server (it holds your API key and calls
+Claude). To put it online:
+
+**Render (free, one click):** push this repo to GitHub → [render.com](https://render.com)
+→ **New → Blueprint** → pick this repo → paste your `ANTHROPIC_API_KEY` when asked.
+You get a public `https://…onrender.com` URL that works on any phone.
+
+**Any Docker host** (Railway, Fly.io, a VPS): a `Dockerfile` is included —
+`docker build -t riddle . && docker run -e ANTHROPIC_API_KEY=sk-ant-... -p 3000:3000 riddle`.
+
+Either way the key stays server-side and nothing is stored.
+
 ## How it works
 
 ```
