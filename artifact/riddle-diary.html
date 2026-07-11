@@ -209,6 +209,13 @@
     color: rgba(52, 40, 18, 0.7);
     max-width: 22ch;
   }
+  .inscribe-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+  }
   .inscribe input {
     width: min(30ch, 82%);
     background: transparent;
@@ -224,6 +231,28 @@
   }
   .inscribe input::placeholder { color: rgba(52, 40, 18, 0.32); }
   .inscribe input:focus { border-bottom-color: rgba(52, 40, 18, 0.75); }
+  .inscribe-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid rgba(52, 40, 18, 0.4);
+    border-radius: 999px;
+    background: rgba(52, 40, 18, 0.06);
+    color: rgba(52, 40, 18, 0.82);
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-style: italic;
+    font-size: 16px;
+    letter-spacing: 0.6px;
+    padding: 9px 26px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .inscribe-btn:hover,
+  .inscribe-btn:focus-visible {
+    background: rgba(52, 40, 18, 0.14);
+    border-color: rgba(52, 40, 18, 0.7);
+    outline: none;
+  }
+  .inscribe-btn:active { background: rgba(52, 40, 18, 0.2); }
   .inscribe small {
     font-style: italic;
     font-size: 12.5px;
@@ -265,10 +294,13 @@
     <div id="think" class="think" hidden><span></span><span></span><span></span></div>
 
     <div id="inscribe" class="inscribe" hidden>
-      <p id="inscribeMsg">Set down your words, that the page may answer.</p>
-      <input id="inscribeInput" type="text" autocomplete="off" autocapitalize="sentences"
-             spellcheck="false" aria-label="Inscribe your words" placeholder="…" />
-      <small>press enter to offer them · esc to withdraw</small>
+      <p id="inscribeMsg">Offer your words to the page.</p>
+      <form id="inscribeForm" class="inscribe-form">
+        <input id="inscribeInput" type="text" autocomplete="off" autocapitalize="sentences"
+               enterkeyhint="send" spellcheck="false" aria-label="Offer your words" placeholder="…" />
+        <button id="inscribeBtn" type="submit" class="inscribe-btn">offer</button>
+      </form>
+      <small>press return, or tap “offer” · esc to withdraw</small>
     </div>
   </div>
 
@@ -291,6 +323,7 @@
   var inscribe = document.getElementById("inscribe");
   var inscribeMsg = document.getElementById("inscribeMsg");
   var inscribeInput = document.getElementById("inscribeInput");
+  var inscribeForm = document.getElementById("inscribeForm");
   var ctx = canvas.getContext("2d");
 
   var IDLE_MS = 2500;
@@ -445,30 +478,33 @@
     } catch (e) { return ""; }
   }
 
-  function askInscribe(prefill) {
+  function askInscribe(prefill, message) {
     return new Promise(function (resolve) {
-      inscribeMsg.textContent = prefill
-        ? "The page reads a word or two. Amend, and offer them."
-        : "The page cannot make out your hand. Inscribe your words.";
+      inscribeMsg.textContent = message || "Offer your words to the page.";
       inscribeInput.value = prefill || "";
       inscribe.hidden = false;
-      setTimeout(function () { inscribeInput.focus(); inscribeInput.select(); }, 30);
+      setTimeout(function () {
+        inscribeInput.focus();
+        try { inscribeInput.select(); } catch (e) {}
+      }, 30);
 
       function done(text) {
+        inscribeForm.removeEventListener("submit", onSubmit);
         inscribeInput.removeEventListener("keydown", onKey);
         inscribe.hidden = true;
         resolve(text);
       }
-      function onKey(ev) {
-        if (ev.key === "Enter") {
-          ev.preventDefault();
-          var v = inscribeInput.value.trim();
-          if (v) done(v);
-        } else if (ev.key === "Escape") {
-          ev.preventDefault();
-          done("");
-        }
+      // A real form submit fires on the on-screen return/Go key AND the button,
+      // which a bare keydown "Enter" listener misses on many soft keyboards.
+      function onSubmit(ev) {
+        ev.preventDefault();
+        var v = inscribeInput.value.trim();
+        if (v) done(v);
       }
+      function onKey(ev) {
+        if (ev.key === "Escape") { ev.preventDefault(); done(""); }
+      }
+      inscribeForm.addEventListener("submit", onSubmit);
       inscribeInput.addEventListener("keydown", onKey);
     });
   }
@@ -537,7 +573,14 @@
 
     // pure magic where the hand was read; a graceful ask where it was not
     var text = read;
-    if (!text) text = await askInscribe(read);
+    if (!text) {
+      // Only claim we "could not read" when a recogniser actually tried and failed;
+      // where the browser has no such magic, simply invite the words.
+      var msg = recognizer
+        ? "The page could not make out your hand. Inscribe your words."
+        : "Offer your words to the page.";
+      text = await askInscribe(read, msg);
+    }
     if (!text) { resetInk(); busy = false; hint.classList.remove("gone"); return; }
 
     strokes = [];
