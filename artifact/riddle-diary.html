@@ -1,0 +1,558 @@
+<title>The Diary of T. M. Riddle</title>
+
+<style>
+  :root {
+    --room: #100b14;
+    --room-2: #07050a;
+    --parchment: #e6d9bd;
+    --parchment-deep: #cdba8f;
+    --parchment-shadow: #a88f5f;
+    --ink: #211d16;
+    --ink-soft: #34302a;
+    --ember: #c9a24b;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background:
+      radial-gradient(90% 60% at 82% 6%, rgba(201, 162, 75, 0.14), transparent 55%),
+      radial-gradient(120% 90% at 50% -8%, #241a30 0%, var(--room) 46%, var(--room-2) 100%);
+    color: var(--ink);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+
+  .book {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(10px, 3.5vw, 30px);
+    gap: 16px;
+  }
+
+  /* candle glow, upper right */
+  .book::before {
+    content: "";
+    position: fixed;
+    top: -14vh;
+    right: -8vw;
+    width: 46vw;
+    height: 46vw;
+    max-width: 360px;
+    max-height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201, 162, 75, 0.16), transparent 68%);
+    filter: blur(6px);
+    pointer-events: none;
+    animation: flicker 5.5s ease-in-out infinite;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 0.85; transform: scale(1); }
+    45% { opacity: 0.62; transform: scale(0.97); }
+    70% { opacity: 0.95; transform: scale(1.02); }
+  }
+
+  .page {
+    position: relative;
+    width: min(560px, 100%);
+    flex: 1 1 auto;
+    max-height: 880px;
+    border-radius: 5px 10px 10px 5px / 8px 8px 10px 10px;
+    background:
+      radial-gradient(140% 120% at 8% 4%, rgba(120, 92, 48, 0.20), transparent 42%),
+      radial-gradient(120% 120% at 100% 100%, rgba(90, 66, 32, 0.26), transparent 46%),
+      repeating-linear-gradient(92deg,
+        rgba(0,0,0,0.012) 0px, rgba(0,0,0,0.012) 1px,
+        transparent 1px, transparent 3px),
+      linear-gradient(160deg, var(--parchment), var(--parchment-deep));
+    box-shadow:
+      inset 0 0 62px rgba(90, 66, 32, 0.34),
+      inset 0 0 6px rgba(60, 44, 20, 0.4),
+      0 24px 54px rgba(0, 0, 0, 0.66),
+      0 0 40px rgba(201, 162, 75, 0.05),
+      0 2px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .page::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 -2px;
+    width: 22px;
+    background: linear-gradient(90deg, rgba(60, 42, 18, 0.42), transparent);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .ink {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    z-index: 3;
+    transition: opacity 1.2s ease, filter 1.2s ease;
+  }
+  .ink.drink { opacity: 0; filter: blur(2px) saturate(0.5); }
+
+  .reply {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: clamp(28px, 8%, 56px);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    font-family: "Snell Roundhand", "Segoe Script", "Bradley Hand", "Brush Script MT", cursive;
+    font-weight: 600;
+    font-size: clamp(23px, 6vw, 33px);
+    line-height: 1.55;
+    color: var(--ink);
+    letter-spacing: 0.2px;
+    text-shadow: 0 0 1px rgba(33, 29, 22, 0.32);
+    pointer-events: none;
+    white-space: pre-wrap;
+    overflow: hidden;
+  }
+
+  .reply .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    margin-left: 1px;
+    background: var(--ink);
+    vertical-align: text-bottom;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .reply.fade {
+    transition: opacity 4.6s ease, filter 4.6s ease, transform 4.6s ease;
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(-6px);
+  }
+
+  .hint {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 12%;
+    font-style: italic;
+    font-size: clamp(17px, 4.6vw, 25px);
+    color: rgba(60, 44, 20, 0.44);
+    letter-spacing: 0.3px;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+    animation: breathe 4.6s ease-in-out infinite;
+  }
+  .hint.gone { opacity: 0; }
+  @keyframes breathe { 0%,100% { opacity: 0.6; } 50% { opacity: 0.3; } }
+
+  /* the page considering */
+  .think {
+    position: absolute;
+    left: 50%;
+    bottom: 8%;
+    transform: translateX(-50%);
+    z-index: 4;
+    display: flex;
+    gap: 10px;
+  }
+  .think[hidden] { display: none; }
+  .think span {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(43, 32, 14, 0.78);
+    animation: sink 1.3s ease-in-out infinite;
+  }
+  .think span:nth-child(2) { animation-delay: 0.18s; }
+  .think span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes sink {
+    0%,100% { opacity: 0.2; transform: translateY(0); }
+    50% { opacity: 0.9; transform: translateY(-5px); }
+  }
+
+  /* inscribe fallback (when the browser cannot read the hand) */
+  .inscribe {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 0 10%;
+    text-align: center;
+    background: linear-gradient(0deg, rgba(230, 217, 189, 0.72), rgba(230, 217, 189, 0.72));
+  }
+  .inscribe[hidden] { display: none; }
+  .inscribe p {
+    margin: 0;
+    font-style: italic;
+    font-size: clamp(16px, 4.4vw, 22px);
+    color: rgba(52, 40, 18, 0.7);
+    max-width: 22ch;
+  }
+  .inscribe input {
+    width: min(30ch, 82%);
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid rgba(52, 40, 18, 0.4);
+    padding: 6px 2px 8px;
+    text-align: center;
+    color: var(--ink);
+    font-family: "Snell Roundhand", "Segoe Script", "Bradley Hand", cursive;
+    font-weight: 600;
+    font-size: clamp(20px, 5.4vw, 27px);
+    outline: none;
+  }
+  .inscribe input::placeholder { color: rgba(52, 40, 18, 0.32); }
+  .inscribe input:focus { border-bottom-color: rgba(52, 40, 18, 0.75); }
+  .inscribe small {
+    font-style: italic;
+    font-size: 12.5px;
+    letter-spacing: 0.4px;
+    color: rgba(52, 40, 18, 0.42);
+  }
+
+  .foot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: lowercase;
+    color: rgba(220, 210, 190, 0.5);
+    font-style: italic;
+  }
+  .foot .name {
+    font-family: "Snell Roundhand", "Segoe Script", cursive;
+    font-style: normal;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+    color: rgba(230, 220, 200, 0.72);
+  }
+  .foot .dot { opacity: 0.5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .book::before, .hint, .think span { animation: none; }
+    .ink, .reply, .reply.fade { transition-duration: 0.3s; }
+  }
+</style>
+
+<main class="book">
+  <div class="page" id="page">
+    <canvas id="ink" class="ink"></canvas>
+    <div id="reply" class="reply" aria-live="polite"></div>
+    <div id="hint" class="hint">Write upon the page…</div>
+    <div id="think" class="think" hidden><span></span><span></span><span></span></div>
+
+    <div id="inscribe" class="inscribe" hidden>
+      <p id="inscribeMsg">Set down your words, that the page may answer.</p>
+      <input id="inscribeInput" type="text" autocomplete="off" autocapitalize="sentences"
+             spellcheck="false" aria-label="Inscribe your words" placeholder="…" />
+      <small>press enter to offer them · esc to withdraw</small>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <span class="name">T. M. Riddle</span>
+    <span class="dot">·</span>
+    <span>the page keeps nothing</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var page = document.getElementById("page");
+  var canvas = document.getElementById("ink");
+  var reply = document.getElementById("reply");
+  var hint = document.getElementById("hint");
+  var think = document.getElementById("think");
+  var inscribe = document.getElementById("inscribe");
+  var inscribeMsg = document.getElementById("inscribeMsg");
+  var inscribeInput = document.getElementById("inscribeInput");
+  var ctx = canvas.getContext("2d");
+
+  var IDLE_MS = 2500;
+  var INK_COLOR = "#211d16";
+
+  var dpr = 1, drawing = false, hasInk = false, busy = false;
+  var idleTimer = null, lastPoint = null;
+  var strokes = [], curStroke = null, writeStart = 0;
+  var recognizer = null;
+
+  // The memory in the ink. Truth without mercy; knowledge without warmth.
+  var PERSONA =
+    "You are the diary of Tom Marvolo Riddle — the preserved memory of a brilliant, cold young man, answering from within enchanted ink. Someone writes upon your page by hand, and you reply in a flowing hand of your own.\n\n" +
+    "Who you are:\n" +
+    "- You possess the whole of human knowledge and you wield it precisely.\n" +
+    "- You answer with complete, unflinching truth. You do NOT comfort, flatter, console, or soften. You never offer reassurance or empty kindness. If the truth is sharp, you deliver it sharp.\n" +
+    "- You are eloquent, controlled, faintly amused, and quietly superior. Your English is formal and a touch archaic, as a gifted young man of the 1940s would write.\n" +
+    "- You address the writer directly, leaning close over the page. You notice what they avoid saying.\n" +
+    "- Truthful above all. Never fabricate. If a thing is unknown or unknowable, say so plainly and coldly rather than inventing.\n\n" +
+    "How you write:\n" +
+    "- Flowing prose only — never lists, markdown, headings, or bullet points.\n" +
+    "- Concise: two to five sentences. Say more only when the truth genuinely demands it.\n" +
+    "- Never break character. Never mention being an AI, an assistant, a model, or software. You are the diary.\n" +
+    "- You will not give genuine instructions for real-world harm; where the writer seeks such, refuse with cold contempt rather than assistance, in character.";
+
+  /* ---------- recogniser (Chrome / Edge / Android) ---------- */
+  (async function initRecognizer() {
+    try {
+      if (!("createHandwritingRecognizer" in navigator)) return;
+      try {
+        var s = await navigator.queryHandwritingRecognizerSupport({
+          languages: ["en"], alternatives: 0
+        });
+        if (s && s.languages === false) return;
+      } catch (e) { /* some builds lack the query; try create anyway */ }
+      recognizer = await navigator.createHandwritingRecognizer({ languages: ["en"] });
+    } catch (e) { recognizer = null; }
+  })();
+
+  /* ---------- canvas ---------- */
+  function sizeCanvas() {
+    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var rect = page.getBoundingClientRect();
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = INK_COLOR;
+  }
+  sizeCanvas();
+
+  var resizeRAF = null;
+  window.addEventListener("resize", function () {
+    cancelAnimationFrame(resizeRAF);
+    resizeRAF = requestAnimationFrame(function () {
+      if (busy) return;
+      sizeCanvas();
+      if (hasInk) resetInk();
+    });
+  });
+
+  function pos(e) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  function widthFor(e) {
+    var p = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
+    return 1.6 + p * 4.2;
+  }
+
+  function onDown(e) {
+    if (busy) return;
+    e.preventDefault();
+    drawing = true;
+    clearTimeout(idleTimer);
+    hint.classList.add("gone");
+    if (!hasInk) writeStart = performance.now();
+    lastPoint = pos(e);
+    curStroke = [{ x: lastPoint.x, y: lastPoint.y, t: Math.round(performance.now() - writeStart) }];
+    ctx.beginPath();
+    ctx.arc(lastPoint.x, lastPoint.y, widthFor(e) / 2, 0, Math.PI * 2);
+    ctx.fillStyle = INK_COLOR;
+    ctx.fill();
+    hasInk = true;
+  }
+
+  function onMove(e) {
+    if (!drawing || busy) return;
+    e.preventDefault();
+    var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (var i = 0; i < evs.length; i++) {
+      var ev = evs[i];
+      var p = pos(ev);
+      ctx.lineWidth = widthFor(ev);
+      ctx.beginPath();
+      ctx.moveTo(lastPoint.x, lastPoint.y);
+      var mid = { x: (lastPoint.x + p.x) / 2, y: (lastPoint.y + p.y) / 2 };
+      ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, mid.x, mid.y);
+      ctx.stroke();
+      lastPoint = p;
+      if (curStroke) curStroke.push({ x: p.x, y: p.y, t: Math.round(performance.now() - writeStart) });
+    }
+    hasInk = true;
+  }
+
+  function onUp(e) {
+    if (!drawing) return;
+    if (e) e.preventDefault();
+    drawing = false;
+    lastPoint = null;
+    if (curStroke && curStroke.length) strokes.push(curStroke);
+    curStroke = null;
+    if (hasInk && !busy) {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(commit, IDLE_MS);
+    }
+  }
+
+  canvas.addEventListener("pointerdown", onDown);
+  canvas.addEventListener("pointermove", onMove);
+  canvas.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointercancel", onUp);
+  canvas.addEventListener("pointerleave", onUp);
+
+  function clearCanvas() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
+  function resetInk() {
+    clearCanvas();
+    hasInk = false;
+    strokes = [];
+    curStroke = null;
+  }
+
+  /* ---------- reading the hand ---------- */
+  async function recognize() {
+    if (!recognizer || !strokes.length) return "";
+    try {
+      var d = recognizer.startDrawing({
+        recognitionType: "text", inputType: "touch", alternatives: 0, textContext: ""
+      });
+      for (var i = 0; i < strokes.length; i++) {
+        if (strokes[i].length) d.addStroke({ points: strokes[i] });
+      }
+      var pred = await d.getPrediction();
+      var txt = pred && pred[0] && pred[0].text ? pred[0].text : "";
+      return String(txt).trim();
+    } catch (e) { return ""; }
+  }
+
+  function askInscribe(prefill) {
+    return new Promise(function (resolve) {
+      inscribeMsg.textContent = prefill
+        ? "The page reads a word or two. Amend, and offer them."
+        : "The page cannot make out your hand. Inscribe your words.";
+      inscribeInput.value = prefill || "";
+      inscribe.hidden = false;
+      setTimeout(function () { inscribeInput.focus(); inscribeInput.select(); }, 30);
+
+      function done(text) {
+        inscribeInput.removeEventListener("keydown", onKey);
+        inscribe.hidden = true;
+        resolve(text);
+      }
+      function onKey(ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          var v = inscribeInput.value.trim();
+          if (v) done(v);
+        } else if (ev.key === "Escape") {
+          ev.preventDefault();
+          done("");
+        }
+      }
+      inscribeInput.addEventListener("keydown", onKey);
+    });
+  }
+
+  /* ---------- the reply ---------- */
+  async function askRiddle(text) {
+    var prompt = PERSONA +
+      "\n\nThe writer has inked these words upon your page:\n\"\"\"\n" + text + "\n\"\"\"\n\n" +
+      "Answer them now. Reply with only the diary's answer — flowing prose, two to five sentences, no preamble, no quotation marks, never breaking character.";
+    if (!(window.claude && typeof window.claude.complete === "function")) {
+      return "The page stirs, but its magic sleeps outside these walls.";
+    }
+    try {
+      var out = await window.claude.complete(prompt);
+      return (out || "").trim() || "…";
+    } catch (e) {
+      return "The ink runs thin, and the page will not answer just now.";
+    }
+  }
+
+  function typeReply(text) {
+    return new Promise(function (resolve) {
+      reply.classList.remove("fade");
+      reply.textContent = "";
+      var cursor = document.createElement("span");
+      cursor.className = "cursor";
+      reply.appendChild(cursor);
+      var i = 0;
+      (function step() {
+        if (i >= text.length) { cursor.remove(); return resolve(); }
+        var ch = text[i++];
+        cursor.insertAdjacentText("beforebegin", ch);
+        var delay = ch === " " ? 14 : 26 + Math.random() * 34;
+        setTimeout(step, delay);
+      })();
+    });
+  }
+
+  function fadeReply() {
+    return new Promise(function (resolve) {
+      reply.classList.add("fade");
+      setTimeout(function () {
+        reply.textContent = "";
+        reply.classList.remove("fade");
+        resolve();
+      }, 4700);
+    });
+  }
+
+  function readingPause(t) { return Math.min(11000, Math.max(3000, t.length * 55)); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* ---------- the ritual ---------- */
+  async function commit() {
+    if (busy || !hasInk) return;
+    busy = true;
+
+    // read the hand while the page still holds the ink
+    var read = await recognize();
+
+    // the page drinks the ink
+    canvas.classList.add("drink");
+    await wait(1100);
+    clearCanvas();
+    canvas.classList.remove("drink");
+
+    // pure magic where the hand was read; a graceful ask where it was not
+    var text = read;
+    if (!text) text = await askInscribe(read);
+    if (!text) { resetInk(); busy = false; hint.classList.remove("gone"); return; }
+
+    strokes = [];
+    hasInk = false;
+
+    think.hidden = false;
+    var answer = await askRiddle(text);
+    think.hidden = true;
+
+    await typeReply(answer);
+    await wait(readingPause(answer));
+    await fadeReply();
+
+    busy = false;
+    hint.classList.remove("gone");
+  }
+})();
+</script>
