@@ -95,3 +95,69 @@ const storyIO = new IntersectionObserver(
   { threshold: 0.5 }
 );
 storyPanels.forEach((p) => storyIO.observe(p));
+
+// Ambient drifting particles: silt and firefly-like motes over the whole page
+(function initParticles() {
+  const canvas = document.getElementById("particleCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion) return;
+
+  const colors = ["#e0754a", "#5ce6c2", "#eef2ef"];
+  let w, h, particles;
+  const COUNT = 70;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+
+  function spawn() {
+    return {
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: 0.6 + Math.random() * 1.8,
+      vy: -(0.08 + Math.random() * 0.22),
+      vx: (Math.random() - 0.5) * 0.12,
+      drift: Math.random() * Math.PI * 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 0.15 + Math.random() * 0.4,
+    };
+  }
+
+  function build() {
+    particles = Array.from({ length: COUNT }, spawn);
+  }
+
+  function step() {
+    ctx.clearRect(0, 0, w, h);
+    for (const p of particles) {
+      p.drift += 0.01;
+      p.x += p.vx + Math.sin(p.drift) * 0.15;
+      p.y += p.vy;
+      if (p.y < -10) {
+        p.y = h + 10;
+        p.x = Math.random() * w;
+      }
+      if (p.x < -10) p.x = w + 10;
+      if (p.x > w + 10) p.x = -10;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.alpha;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(step);
+  }
+
+  resize();
+  build();
+  window.addEventListener("resize", () => {
+    resize();
+    build();
+  });
+  requestAnimationFrame(step);
+})();

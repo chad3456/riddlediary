@@ -67,6 +67,72 @@ function onHeroScroll() {
 window.addEventListener("scroll", onHeroScroll, { passive: true });
 onHeroScroll();
 
+// Ambient drifting particles over the hero: fireflies and silt motes
+(function initHeroParticles() {
+  const canvas = document.getElementById("heroParticles");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion) return;
+
+  const colors = ["#e0754a", "#5ce6c2", "#f2e8d5"];
+  let w, h, particles;
+  const COUNT = 46;
+
+  function resize() {
+    w = canvas.width = hero.clientWidth;
+    h = canvas.height = hero.clientHeight;
+  }
+
+  function spawn() {
+    return {
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: 0.6 + Math.random() * 1.6,
+      vy: -(0.06 + Math.random() * 0.16),
+      vx: (Math.random() - 0.5) * 0.1,
+      drift: Math.random() * Math.PI * 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 0.15 + Math.random() * 0.35,
+    };
+  }
+
+  function build() {
+    particles = Array.from({ length: COUNT }, spawn);
+  }
+
+  function step() {
+    ctx.clearRect(0, 0, w, h);
+    for (const p of particles) {
+      p.drift += 0.012;
+      p.x += p.vx + Math.sin(p.drift) * 0.12;
+      p.y += p.vy;
+      if (p.y < -8) {
+        p.y = h + 8;
+        p.x = Math.random() * w;
+      }
+      if (p.x < -8) p.x = w + 8;
+      if (p.x > w + 8) p.x = -8;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.alpha;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(step);
+  }
+
+  resize();
+  build();
+  window.addEventListener("resize", () => {
+    resize();
+    build();
+  });
+  requestAnimationFrame(step);
+})();
+
 // Build a simple procedural row of mangrove trees in the hero
 (function buildMangroves() {
   const count = 24;
