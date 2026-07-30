@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ELI5: Why the Delta Needs Its Roots Back — Tidal Roots</title>
+<meta name="description" content="A short, cinematic explainer on why Tidal Roots replants mangrove roots along a fictional delta." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="eli5-header">
+  <a href="../" class="back-link">&larr; Tidal Roots</a>
+  <span class="eli5-tag">ELI5</span>
+</header>
+
+<main>
+
+  <!-- INTRO -->
+  <section class="intro">
+    <p class="intro-eyebrow reveal">Explain it like I'm five</p>
+    <h1 class="intro-title reveal">Why a delta needs<br>its roots back.</h1>
+    <p class="intro-sub reveal">Two minutes, no jargon. Scroll on.</p>
+    <div class="intro-cue reveal"><span></span></div>
+  </section>
+
+  <!-- CONTEXT: MAP + STATS -->
+  <section class="context" id="context">
+    <div class="context-sticky">
+      <svg class="context-map" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <radialGradient id="mapGlow" cx="50%" cy="45%" r="65%">
+            <stop offset="0%" stop-color="#123f3a"/>
+            <stop offset="100%" stop-color="#07100f"/>
+          </radialGradient>
+        </defs>
+        <rect width="1000" height="1000" fill="url(#mapGlow)"/>
+        <g class="map-land" fill="none" stroke="#35563f" stroke-width="1.4" opacity="0.7">
+          <path d="M120 260 C220 200 340 210 420 260 C520 320 560 260 660 240 C760 220 840 280 900 340" />
+          <path d="M160 380 C260 340 360 360 440 400 C540 450 620 400 720 420" />
+          <path d="M100 480 C220 460 320 500 420 520 C540 545 640 500 760 520" />
+        </g>
+        <path class="map-coast" d="M0 620 C160 560 260 640 380 610 C520 575 620 660 760 620 C860 595 940 640 1000 610 V1000 H0 Z" fill="#0f3d3e"/>
+        <path class="map-coast-deep" d="M0 700 C160 660 260 720 380 700 C520 670 620 730 760 700 C860 682 940 710 1000 695 V1000 H0 Z" fill="#0a2b2c" opacity="0.9"/>
+        <g class="map-points" fill="#e0754a">
+          <circle cx="360" cy="560" r="5"/>
+          <circle cx="460" cy="590" r="5"/>
+          <circle cx="560" cy="565" r="5"/>
+          <circle cx="650" cy="600" r="5"/>
+        </g>
+      </svg>
+      <div class="context-stats">
+        <div class="context-stat">
+          <span class="cs-label">Households along this bank</span>
+          <span class="cs-value" data-count="4200">0</span>
+        </div>
+        <div class="context-stat">
+          <span class="cs-label">Coastline once losing ground</span>
+          <span class="cs-value" data-count="38" data-suffix=" km">0</span>
+        </div>
+        <div class="context-stat">
+          <span class="cs-label">Average tide advance per year</span>
+          <span class="cs-value" data-count="9" data-decimals="1" data-suffix=" m">0</span>
+        </div>
+      </div>
+    </div>
+    <div class="context-panels">
+      <article class="context-panel">
+        <p>This is a stretch of river delta &mdash; flat, low, and laced with tidal creeks.</p>
+      </article>
+      <article class="context-panel">
+        <p>Thousands of households here live within a few hundred metres of the water.</p>
+      </article>
+      <article class="context-panel" data-reveal-stats="true">
+        <p>Without a root system to hold it, the bank simply washes away &mdash; a little more with every monsoon.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- PAINTERLY NARRATIVE -->
+  <section class="story" id="story">
+    <div class="story-sticky">
+      <svg class="story-scene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <filter id="paintTexture" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="3" seed="7" result="noise"/>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+            <feColorMatrix type="saturate" values="0.9"/>
+          </filter>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#07100f"/>
+            <stop offset="100%" stop-color="#123f3a"/>
+          </linearGradient>
+        </defs>
+        <g filter="url(#paintTexture)">
+          <rect width="1000" height="600" fill="url(#skyGrad)"/>
+          <path class="story-tide" d="M0 420 C150 400 250 440 400 420 C560 398 660 440 820 420 C900 410 950 420 1000 415 V600 H0 Z" fill="#0f3d3e"/>
+          <path class="story-tide-2" d="M0 470 C150 452 260 480 400 468 C560 452 660 480 820 468 C900 460 950 466 1000 462 V600 H0 Z" fill="#0a2b2c" opacity="0.85"/>
+          <g class="story-figures" fill="#eef2ef" opacity="0.9">
+            <path d="M470 380 C466 360 474 348 480 340 C486 348 494 360 490 380 C498 386 500 400 494 408 L486 408 L486 430 L474 430 L474 408 L466 408 C460 400 462 386 470 380 Z"/>
+            <path d="M540 390 C536 372 544 360 550 353 C556 360 564 372 560 390 C568 396 570 408 564 415 L556 415 L556 432 L544 432 L544 415 L536 415 C530 408 532 396 540 390 Z"/>
+          </g>
+          <g class="story-roots" stroke="#e0754a" stroke-width="3.4" fill="none" stroke-linecap="round" opacity="0">
+            <path d="M470 430 C460 410 456 396 458 380"/>
+            <path d="M470 430 C470 410 470 396 470 380"/>
+            <path d="M470 430 C480 410 484 396 482 380"/>
+            <path d="M545 434 C535 414 531 400 533 384"/>
+            <path d="M545 434 C545 414 545 400 545 384"/>
+            <path d="M545 434 C555 414 559 400 557 384"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="story-panels">
+      <article class="story-panel" data-act="1">
+        <div class="story-panel-inner">
+          <span class="story-kicker">Right now</span>
+          <p>Every high tide chews a little further into the bank. Nothing is holding the silt in place.</p>
+        </div>
+      </article>
+      <article class="story-panel" data-act="2">
+        <div class="story-panel-inner">
+          <span class="story-kicker">What changes</span>
+          <p>Mangrove roots go back into the mud. Living root systems knit the silt together from below.</p>
+        </div>
+      </article>
+      <article class="story-panel" data-act="3">
+        <div class="story-panel-inner">
+          <span class="story-kicker">What that buys</span>
+          <p>The same tide arrives &mdash; and the bank simply holds. That's the whole idea.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- CLOSE -->
+  <section class="eli5-close">
+    <h2 class="reveal">That's it. Roots hold ground.<br>Ground holds carbon.</h2>
+    <p class="reveal">For the fuller version &mdash; the numbers, the process, the people &mdash; see the main project page.</p>
+    <a class="btn-back reveal" href="../">Back to Tidal Roots &rarr;</a>
+  </section>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
