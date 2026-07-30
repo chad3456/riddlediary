@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tidal Roots — Restoring the Delta, Tonne by Tonne</title>
+<meta name="description" content="Tidal Roots is a fictional blue-carbon mangrove restoration project — a scroll-driven story of a delta, its people, and the carbon they're pulling back out of the sky." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-row">
+    <a href="#top" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="30" height="30">
+          <path d="M20 34 C20 34 8 26 8 15 C8 9 13 5 20 5 C27 5 32 9 32 15 C32 26 20 34 20 34 Z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M20 34 L20 12 M20 18 L13 12 M20 22 L27 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand-word">TIDAL ROOTS</span>
+    </a>
+    <nav class="main-nav" aria-label="Primary">
+      <a href="#story">The Delta</a>
+      <a href="#impact">Impact</a>
+      <a href="#process">How it Works</a>
+      <a href="#community">Community</a>
+      <a href="#map">The Site</a>
+      <a href="eli5/">ELI5</a>
+    </nav>
+    <a class="btn btn-solid" href="#support">Support this project</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#story">The Delta</a>
+    <a href="#impact">Impact</a>
+    <a href="#process">How it Works</a>
+    <a href="#community">Community</a>
+    <a href="#map">The Site</a>
+    <a href="eli5/">ELI5</a>
+    <a href="#support">Support this project</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-scene" aria-hidden="true">
+      <div class="layer layer-sky"></div>
+      <svg class="layer layer-birds" viewBox="0 0 1200 200" preserveAspectRatio="xMidYMid slice">
+        <path d="M120 60 q14 -18 28 0 q14 -18 28 0" fill="none" stroke="#12201f" stroke-width="3" stroke-linecap="round" opacity="0.35"/>
+        <path d="M300 100 q12 -15 24 0 q12 -15 24 0" fill="none" stroke="#12201f" stroke-width="3" stroke-linecap="round" opacity="0.28"/>
+        <path d="M900 50 q14 -18 28 0 q14 -18 28 0" fill="none" stroke="#12201f" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+        <path d="M1020 110 q10 -13 20 0 q10 -13 20 0" fill="none" stroke="#12201f" stroke-width="3" stroke-linecap="round" opacity="0.24"/>
+      </svg>
+      <svg class="layer layer-water" viewBox="0 0 1200 400" preserveAspectRatio="none">
+        <path d="M0 220 Q150 190 300 220 T600 220 T900 220 T1200 220 V400 H0 Z" fill="#1f6f5c"/>
+        <path d="M0 260 Q150 235 300 260 T600 260 T900 260 T1200 260 V400 H0 Z" fill="#175248" opacity="0.85"/>
+      </svg>
+      <svg class="layer layer-mangrove" viewBox="0 0 1200 420" preserveAspectRatio="none">
+        <g id="mgTemplate" opacity="0">
+          <path d="M0 260 C10 210 30 190 40 150 C50 120 45 90 55 60" fill="none" stroke="#0f3d3e" stroke-width="6" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <div class="mangrove-row" id="mangroveRow"></div>
+      <canvas id="heroParticles" class="hero-particles" aria-hidden="true"></canvas>
+    </div>
+    <div class="wrap hero-copy">
+      <p class="eyebrow reveal">A blue-carbon story · Fictional restoration site</p>
+      <h1 class="hero-title reveal">Tidal Roots</h1>
+      <p class="hero-sub reveal">Every root replanted here holds back a little more carbon, a little more coastline, and a little more of the life that depends on both. Scroll to walk the delta.</p>
+      <div class="scroll-hint reveal">
+        <span>Scroll</span>
+        <div class="scroll-line"><i></i></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STICKY STORY -->
+  <section class="story" id="story">
+    <div class="story-sticky">
+      <svg class="story-illustration" viewBox="0 0 600 600" aria-hidden="true">
+        <circle cx="300" cy="300" r="280" fill="#0f3d3e"/>
+        <path class="story-water" d="M0 420 Q150 390 300 420 T600 420 V600 H0 Z" fill="#1f6f5c"/>
+        <g class="story-roots" stroke="#e0754a" stroke-width="4" fill="none" stroke-linecap="round">
+          <path d="M300 480 C280 440 260 420 250 400"/>
+          <path d="M300 480 C300 440 300 420 300 400"/>
+          <path d="M300 480 C320 440 340 420 350 400"/>
+        </g>
+        <g class="story-canopy" fill="#e0754a" opacity="0">
+          <circle cx="260" cy="360" r="34"/>
+          <circle cx="300" cy="340" r="42"/>
+          <circle cx="345" cy="365" r="30"/>
+        </g>
+        <g class="story-birds" stroke="#f2e8d5" stroke-width="4" fill="none" stroke-linecap="round" opacity="0">
+          <path d="M180 180 q14 -18 28 0 q14 -18 28 0"/>
+          <path d="M380 140 q14 -18 28 0 q14 -18 28 0"/>
+        </g>
+        <g class="story-houses" fill="#f2e8d5" opacity="0">
+          <rect x="150" y="470" width="34" height="26" rx="2"/>
+          <polygon points="147,470 167,452 187,470"/>
+          <rect x="420" y="470" width="34" height="26" rx="2"/>
+          <polygon points="417,470 437,452 457,470"/>
+        </g>
+      </svg>
+    </div>
+    <div class="story-panels">
+      <article class="story-panel" data-act="1">
+        <div class="story-panel-inner">
+<span class="act-number">Act One</span>
+        <h2>A coastline losing ground</h2>
+        <p>Decades of clearing left this stretch of delta bare — the roots that once held the silt together were gone, and the tide kept taking a little more of the bank every year.</p>
+</div>
+      </article>
+      <article class="story-panel" data-act="2">
+        <div class="story-panel-inner">
+<span class="act-number">Act Two</span>
+        <h2>Roots go back in the mud</h2>
+        <p>Local nurseries raise the seedlings; planting crews walk them out at low tide, row by row, into ground chosen for exactly the water depth each species needs to take hold.</p>
+</div>
+      </article>
+      <article class="story-panel" data-act="3">
+        <div class="story-panel-inner">
+<span class="act-number">Act Three</span>
+        <h2>The canopy returns</h2>
+        <p>Within a few seasons the first stands close ranks overhead. Fish nurseries reappear in the shade of the roots; the birds that had moved on start coming back.</p>
+</div>
+      </article>
+      <article class="story-panel" data-act="4">
+        <div class="story-panel-inner">
+<span class="act-number">Act Four</span>
+        <h2>A delta that feeds itself again</h2>
+        <p>Households along the bank now draw a living from the forest they replanted — honey, fish, and a wage for tending trees that are quietly banking carbon for the rest of us.</p>
+</div>
+      </article>
+    </div>
+  </section>
+
+  <!-- IMPACT -->
+  <section class="impact" id="impact">
+    <div class="wrap">
+      <h2 class="section-title reveal">Impact, by the numbers</h2>
+      <p class="section-lede reveal">Figures are illustrative for this fictional project — a placeholder for what real, audited data would show.</p>
+
+      <div class="stat-grid">
+        <div class="stat-card reveal">
+          <span class="stat-num" data-count="86400">0</span>
+          <span class="stat-label">Tonnes CO&#8322;e sequestered</span>
+        </div>
+        <div class="stat-card reveal">
+          <span class="stat-num" data-count="2140">0</span>
+          <span class="stat-label">Hectares replanted</span>
+        </div>
+        <div class="stat-card reveal">
+          <span class="stat-num" data-count="63">0</span>
+          <span class="stat-label">Species recorded returning</span>
+        </div>
+        <div class="stat-card reveal">
+          <span class="stat-num" data-count="1240">0</span>
+          <span class="stat-label">Households supported</span>
+        </div>
+      </div>
+
+      <div class="chart-block reveal">
+        <div class="chart-head">
+          <h3>Carbon sequestered per year</h3>
+          <span class="chart-unit">tonnes CO&#8322;e, cumulative</span>
+        </div>
+        <svg class="chart-svg" viewBox="0 0 800 280" preserveAspectRatio="none">
+          <line x1="0" y1="70" x2="800" y2="70" stroke="rgba(242,232,213,0.12)"/>
+          <line x1="0" y1="140" x2="800" y2="140" stroke="rgba(242,232,213,0.12)"/>
+          <line x1="0" y1="210" x2="800" y2="210" stroke="rgba(242,232,213,0.12)"/>
+          <path id="chartArea" d="M0 260 L0 260 L800 260 Z" fill="url(#chartGrad)"/>
+          <path id="chartLine" d="M0 260 L0 260" fill="none" stroke="#e0754a" stroke-width="3" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e0754a" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#e0754a" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="chart-labels">
+          <span>Y1</span><span>Y2</span><span>Y3</span><span>Y4</span><span>Y5</span><span>Y6</span><span>Y7</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section class="process" id="process">
+    <div class="wrap">
+      <h2 class="section-title reveal">How a tonne gets here</h2>
+      <div class="process-steps">
+        <div class="step reveal">
+          <svg class="step-icon" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="#e0754a" stroke-width="2"/><path d="M32 46 V22 M32 22 C24 22 20 16 20 16 M32 22 C40 22 44 16 44 16" fill="none" stroke="#e0754a" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <span class="step-index">01</span>
+          <h3>Nursery</h3>
+          <p>Seedlings are raised from local seed stock until their roots can hold their own weight.</p>
+        </div>
+        <div class="step reveal">
+          <svg class="step-icon" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="#e0754a" stroke-width="2"/><path d="M18 40 L32 20 L46 40" fill="none" stroke="#e0754a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 20 V46" stroke="#e0754a" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <span class="step-index">02</span>
+          <h3>Planting</h3>
+          <p>Crews plant at low tide, spacing each seedling for the species and the site's specific hydrology.</p>
+        </div>
+        <div class="step reveal">
+          <svg class="step-icon" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="#e0754a" stroke-width="2"/><path d="M18 32 h10 l6 -12 l6 20 l6 -8 h8" fill="none" stroke="#e0754a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="step-index">03</span>
+          <h3>Monitoring</h3>
+          <p>Growth, survival, and carbon stock are measured on a fixed schedule against the site baseline.</p>
+        </div>
+        <div class="step reveal">
+          <svg class="step-icon" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="#e0754a" stroke-width="2"/><path d="M20 32 L28 40 L44 22" fill="none" stroke="#e0754a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="step-index">04</span>
+          <h3>Verification</h3>
+          <p>An independent body checks the numbers before anything is issued.</p>
+        </div>
+        <div class="step reveal">
+          <svg class="step-icon" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="none" stroke="#e0754a" stroke-width="2"/><rect x="18" y="24" width="28" height="18" rx="3" fill="none" stroke="#e0754a" stroke-width="2.4"/><circle cx="32" cy="33" r="4" fill="#e0754a"/></svg>
+          <span class="step-index">05</span>
+          <h3>Credit issued</h3>
+          <p>One verified tonne becomes one credit, traceable back to this stretch of delta.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALLERY -->
+  <section class="gallery">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 class="section-title reveal">Life in the delta</h2>
+        <p class="reveal">Illustrated scenes standing in for the field photography a real project would show.</p>
+      </div>
+      <div class="gallery-scroll">
+        <figure class="gallery-card reveal">
+          <svg viewBox="0 0 300 220"><rect width="300" height="220" fill="#0f3d3e"/><path d="M0 150 Q75 130 150 150 T300 150 V220 H0 Z" fill="#1f6f5c"/><path d="M60 150 C60 110 70 90 75 60 M75 60 C60 55 50 45 50 45 M75 60 C90 55 100 45 100 45" stroke="#e0754a" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+          <figcaption>Young stands, first growing season</figcaption>
+        </figure>
+        <figure class="gallery-card reveal">
+          <svg viewBox="0 0 300 220"><rect width="300" height="220" fill="#123f3a"/><path d="M0 160 Q75 140 150 160 T300 160 V220 H0 Z" fill="#1f6f5c"/><circle cx="90" cy="90" r="26" fill="#e0754a" opacity="0.9"/><circle cx="140" cy="70" r="34" fill="#e0754a" opacity="0.9"/><circle cx="190" cy="95" r="24" fill="#e0754a" opacity="0.9"/></svg>
+          <figcaption>Canopy closing over the nursery rows</figcaption>
+        </figure>
+        <figure class="gallery-card reveal">
+          <svg viewBox="0 0 300 220"><rect width="300" height="220" fill="#0f3d3e"/><path d="M0 170 Q75 150 150 170 T300 170 V220 H0 Z" fill="#175248"/><path d="M40 130 q14 -18 28 0 q14 -18 28 0" stroke="#f2e8d5" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M180 100 q14 -18 28 0 q14 -18 28 0" stroke="#f2e8d5" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+          <figcaption>Wading birds, back on the flats</figcaption>
+        </figure>
+        <figure class="gallery-card reveal">
+          <svg viewBox="0 0 300 220"><rect width="300" height="220" fill="#123f3a"/><rect x="60" y="120" width="40" height="30" rx="2" fill="#f2e8d5"/><polygon points="56,120 80,100 104,120" fill="#f2e8d5"/><rect x="180" y="120" width="40" height="30" rx="2" fill="#f2e8d5"/><polygon points="176,120 200,100 224,120" fill="#f2e8d5"/></svg>
+          <figcaption>The village that tends this stretch</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMUNITY -->
+  <section class="community" id="community">
+    <div class="wrap">
+      <h2 class="section-title reveal">Voices from the bank</h2>
+      <div class="testimonial-grid">
+        <blockquote class="testimonial reveal">
+          <p>"We used to lose a metre of ground every monsoon. Now the roots hold, and so does the house behind them."</p>
+          <cite><span class="avatar" style="--hue:16">RH</span> Rina H., planting crew lead</cite>
+        </blockquote>
+        <blockquote class="testimonial reveal">
+          <p>"The fish came back before the tourists did. That told us something was actually working."</p>
+          <cite><span class="avatar" style="--hue:160">AT</span> Amit T., fisher</cite>
+        </blockquote>
+        <blockquote class="testimonial reveal">
+          <p>"I get paid to monitor trees I planted as a teenager. That's not a sentence I expected to say."</p>
+          <cite><span class="avatar" style="--hue:200">NS</span> Nasrin S., field monitor</cite>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section class="site-map" id="map">
+    <div class="wrap map-wrap">
+      <div class="map-copy">
+        <h2 class="section-title reveal">The site</h2>
+        <p class="reveal">An illustrative, non-navigational sketch of the restoration zones — not an actual survey map.</p>
+        <ul class="map-legend reveal">
+          <li><span class="dot" style="background:#e0754a"></span> Planted 2019&ndash;2021</li>
+          <li><span class="dot" style="background:#5ce6c2"></span> Planted 2022&ndash;2024</li>
+          <li><span class="dot" style="background:#f2e8d5"></span> Community &amp; monitoring post</li>
+        </ul>
+      </div>
+      <svg class="map-illustration reveal" viewBox="0 0 500 500">
+        <rect width="500" height="500" rx="24" fill="#0f3d3e"/>
+        <path d="M0 320 C100 280 160 340 220 300 C300 250 340 340 500 300 V500 H0 Z" fill="#175248"/>
+        <path d="M60 260 Q90 200 60 140" stroke="#1f6f5c" stroke-width="18" fill="none" stroke-linecap="round"/>
+        <circle cx="150" cy="230" r="14" fill="#e0754a"/>
+        <circle cx="200" cy="260" r="10" fill="#e0754a"/>
+        <circle cx="120" cy="300" r="12" fill="#e0754a"/>
+        <circle cx="260" cy="200" r="12" fill="#5ce6c2"/>
+        <circle cx="320" cy="240" r="10" fill="#5ce6c2"/>
+        <circle cx="300" cy="300" r="14" fill="#5ce6c2"/>
+        <rect x="220" y="150" width="14" height="14" fill="#f2e8d5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta" id="support">
+    <div class="wrap">
+      <h2 class="cta-title reveal">Every credit traces back<br>to a specific patch of mud.</h2>
+      <p class="reveal">This is a demonstration page for a fictional project — no real credits are for sale here.</p>
+      <a class="btn btn-solid btn-large reveal" href="mailto:hello@tidalroots.example">hello@tidalroots.example</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-row">
+    <span>&copy; 2026 Tidal Roots. Fictional project, for demonstration only.</span>
+    <div class="footer-links">
+      <a href="#top">Back to top</a>
+      <a href="#">Twitter</a>
+      <a href="#">Instagram</a>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
