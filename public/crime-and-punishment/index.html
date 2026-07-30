@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crime and Punishment — A Case File</title>
+<meta name="description" content="A visual essay on Dostoevsky's Crime and Punishment: the theory behind the murder, the psychology of guilt, the people around Raskolnikov, and why the book still lands." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<canvas id="grain" class="grain" aria-hidden="true"></canvas>
+
+<header class="site-header">
+  <span class="brand">C&amp;P / 1866</span>
+  <nav aria-label="Primary">
+    <a href="#dossier">Dossier</a>
+    <a href="#theory">The Theory</a>
+    <a href="#chart">The Fever Chart</a>
+    <a href="#minds">Dossier of Minds</a>
+    <a href="#quotes">In His Words</a>
+    <a href="#legacy">Why It Still Cuts</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <p class="case-tag reveal">CASE FILE &middot; OPENED 1866 &middot; ST. PETERSBURG</p>
+    <h1 class="hero-title reveal">Crime<span class="hero-and">&amp;</span>Punishment</h1>
+    <p class="hero-sub reveal">A visual essay on the murder, the theory behind it, and the guilt that wouldn't stay buried.</p>
+    <div class="hero-meta reveal">
+      <span>Fyodor Dostoevsky</span>
+      <span class="dot">&middot;</span>
+      <span>Serialized 1866, <em>The Russian Messenger</em></span>
+    </div>
+    <div class="scroll-cue reveal"><span></span></div>
+  </section>
+
+  <!-- DOSSIER -->
+  <section class="dossier" id="dossier">
+    <div class="wrap dossier-grid">
+      <div class="dossier-facts reveal">
+        <dl>
+          <div><dt>Author</dt><dd>Fyodor Dostoevsky</dd></div>
+          <div><dt>Written</dt><dd>1865&ndash;1866, shortly after his Siberian exile</dd></div>
+          <div><dt>First published</dt><dd>Serialized monthly in <em>The Russian Messenger</em>, 1866</dd></div>
+          <div><dt>Setting</dt><dd>St. Petersburg, a city of heat, debt, and crowded stairwells</dd></div>
+          <div><dt>Form</dt><dd>Psychological novel, third person, close to a single mind</dd></div>
+        </dl>
+      </div>
+      <div class="dossier-prose reveal">
+        <h2>The file</h2>
+        <p>Dostoevsky wrote this not long after four years in a Siberian penal colony for belonging to a group that read banned political texts aloud. He came back broke, in debt from gambling, and furious at the utilitarian and radical ideas circulating among the young intelligentsia &mdash; the idea that a sufficiently rational, sufficiently justified act could stand outside ordinary morality.</p>
+        <p>So he built a character to test that idea to destruction: a poor former law student, isolated in a rented closet of a room, who convinces himself that killing one worthless person to fund a thousand good acts is arithmetic, not sin. Then he makes that character go through with it, and spends five hundred pages watching what the mind does afterward.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- THEORY -->
+  <section class="theory" id="theory">
+    <div class="wrap">
+      <h2 class="section-title reveal">The theory on trial</h2>
+      <p class="section-lede reveal">Months before the murder, Raskolnikov publishes an article arguing that humanity splits into two categories. The novel exists to find out if he actually believes it.</p>
+      <div class="theory-toggle reveal">
+        <button class="theory-btn active" data-theory="ordinary">The Ordinary</button>
+        <button class="theory-btn" data-theory="extraordinary">The Extraordinary</button>
+      </div>
+      <div class="theory-panel reveal">
+        <div class="theory-view" data-view="ordinary">
+          <p>Most people, in Raskolnikov's theory, exist to reproduce their own kind and obey the law &mdash; not because they're incapable of more, but because obedience is what keeps the species going. Conscience, for them, is a fence, not a burden.</p>
+        </div>
+        <div class="theory-view" data-view="extraordinary" hidden>
+          <p>A rare few &mdash; his example is Napoleon &mdash; are permitted, even obligated, to break the law when history needs something new from them. Their transgression isn't a crime; it's the toll paid for progress. Raskolnikov wonders, in private, which category he belongs to. The murder is his experiment to find out.</p>
+        </div>
+      </div>
+      <p class="theory-punchline reveal">He passes the test of nerve and fails every test that comes after.</p>
+    </div>
+  </section>
+
+  <!-- FEVER CHART -->
+  <section class="chart-section" id="chart">
+    <div class="wrap">
+      <h2 class="section-title reveal">The fever chart</h2>
+      <p class="section-lede reveal">An interpretive read of Raskolnikov's psychological state across the novel's six parts and epilogue &mdash; not data, a diagnosis.</p>
+    </div>
+    <div class="chart-sticky-wrap">
+      <svg class="fever-svg" viewBox="0 0 1000 420" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <defs>
+          <linearGradient id="feverFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#a83c32" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#a83c32" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g class="grid-lines" stroke="rgba(239,233,223,0.1)">
+          <line x1="0" y1="90" x2="1000" y2="90"/>
+          <line x1="0" y1="180" x2="1000" y2="180"/>
+          <line x1="0" y1="270" x2="1000" y2="270"/>
+        </g>
+        <path id="feverArea" fill="url(#feverFill)" d=""/>
+        <path id="feverLine" fill="none" stroke="#a83c32" stroke-width="3" stroke-linecap="round" d=""/>
+        <g id="feverPoints"></g>
+      </svg>
+      <div class="fever-labels">
+        <span>Part I</span><span>Part II</span><span>Part III</span><span>Part IV</span><span>Part V</span><span>Part VI</span><span>Epilogue</span>
+      </div>
+      <p class="fever-caption" id="feverCaption">Scroll to trace the line.</p>
+    </div>
+    <div class="chart-scroll-track" id="chartTrack"></div>
+  </section>
+
+  <!-- DOSSIER OF MINDS -->
+  <section class="minds" id="minds">
+    <div class="wrap">
+      <h2 class="section-title reveal">Dossier of minds</h2>
+      <p class="section-lede reveal">Everyone orbiting Raskolnikov argues a different answer to his theory, whether they know it or not. Tap a card.</p>
+      <div class="board">
+        <div class="board-center reveal">
+          <span class="board-role">The subject</span>
+          <span class="board-name">Rodion Raskolnikov</span>
+        </div>
+        <div class="board-grid">
+          <button class="mind-card reveal" data-desc="A young woman pushed into prostitution to feed her family, whose faith is not innocence but the one thing left standing after everything else was taken. She never argues Raskolnikov's theory &mdash; she just refuses to let him disappear into it.">
+            <span class="mind-name">Sonya Marmeladov</span>
+            <span class="mind-role">Faith without illusions</span>
+          </button>
+          <button class="mind-card reveal" data-desc="The investigating magistrate. He doesn't need a confession to know who did it &mdash; he needs Raskolnikov to need to confess. A cat-and-mouse built entirely out of psychology, not evidence.">
+            <span class="mind-name">Porfiry Petrovich</span>
+            <span class="mind-role">Justice as patience</span>
+          </button>
+          <button class="mind-card reveal" data-desc="A wealthy libertine who has already lived out the theory with none of the guilt &mdash; and finds it hasn't given him anything worth having. The dark mirror showing where the theory actually leads.">
+            <span class="mind-name">Svidrigailov</span>
+            <span class="mind-role">The theory, unpunished</span>
+          </button>
+          <button class="mind-card reveal" data-desc="Raskolnikov's sister, who nearly marries a man she despises to save the family finances &mdash; her own quiet version of the same arithmetic her brother tried to justify with a murder.">
+            <span class="mind-name">Dunya Raskolnikov</span>
+            <span class="mind-role">Sacrifice, measured</span>
+          </button>
+          <button class="mind-card reveal" data-desc="Raskolnikov's friend, who shows up, feeds him, defends him, and asks for nothing back. The novel's quiet counter-argument: ordinary decency, unglamorous and completely sufficient.">
+            <span class="mind-name">Razumikhin</span>
+            <span class="mind-role">Loyalty, plainly</span>
+          </button>
+          <button class="mind-card reveal" data-desc="Sonya's father, a clerk who drinks away what little his family has and narrates his own degradation with total clarity. Poverty in the novel isn't background &mdash; it's a character with its own logic.">
+            <span class="mind-name">Marmeladov</span>
+            <span class="mind-role">Poverty, articulate</span>
+          </button>
+        </div>
+      </div>
+      <p class="mind-detail" id="mindDetail">Select a name above the board.</p>
+    </div>
+  </section>
+
+  <!-- QUOTES -->
+  <section class="quotes" id="quotes">
+    <div class="wrap">
+      <h2 class="section-title reveal">In his own words</h2>
+      <p class="section-lede reveal">Five lines, out of many, that keep getting underlined.</p>
+      <div class="quote-grid">
+        <figure class="quote-card reveal">
+          <blockquote>&ldquo;Pain and suffering are always inevitable for a large intelligence and a deep heart.&rdquo;</blockquote>
+          <figcaption>Raskolnikov</figcaption>
+        </figure>
+        <figure class="quote-card reveal">
+          <blockquote>&ldquo;Man grows used to everything, the scoundrel!&rdquo;</blockquote>
+          <figcaption>Raskolnikov, on himself</figcaption>
+        </figure>
+        <figure class="quote-card reveal">
+          <blockquote>&ldquo;To go wrong in one's own way is better than to go right in someone else's.&rdquo;</blockquote>
+          <figcaption>Razumikhin</figcaption>
+        </figure>
+        <figure class="quote-card reveal">
+          <blockquote>&ldquo;I did not bow down to you, I bowed down to all the suffering of humanity.&rdquo;</blockquote>
+          <figcaption>Raskolnikov, to Sonya</figcaption>
+        </figure>
+        <figure class="quote-card reveal quote-card-wide">
+          <blockquote>&ldquo;&hellip;the story of the gradual renewal of a man, the story of his gradual regeneration, of his passing from one world into another&hellip;&rdquo;</blockquote>
+          <figcaption>The novel's final line, on the epilogue</figcaption>
+        </figure>
+      </div>
+      <p class="quote-note">Quoted from standard English translations; exact phrasing varies by translator.</p>
+    </div>
+  </section>
+
+  <!-- LEGACY -->
+  <section class="legacy" id="legacy">
+    <div class="wrap legacy-grid">
+      <h2 class="section-title reveal">Why it still cuts</h2>
+      <div class="legacy-body">
+        <p class="reveal">Dostoevsky more or less invents a mode of fiction that novels are still running on: the close, unreliable, feverish third person that lives inside a mind under pressure rather than describing it from outside. Nietzsche called him the one psychologist he had anything to learn from. The existentialists after him &mdash; Camus, Sartre &mdash; kept arguing with Raskolnikov's theory as if it were a live opponent, not a character.</p>
+        <p class="reveal">The reason it still lands has less to do with the axe than with the theory. Every generation produces its own version of "the rules don't apply to me because my reasoning is sound" &mdash; ideology as permission slip, moral exceptionalism dressed up as logic. Raskolnikov is the case study for what that actually costs a person, long before the consequences show up from outside.</p>
+        <p class="reveal">And the ending is the part people undersell: not punishment as an external sentence, but the far slower discovery that isolation was the real prison, and that being known &mdash; by Sonya, by Porfiry, eventually by himself &mdash; is the only way out of it. In an age of curated selves and private justifications, that's not a period detail. It's the argument.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSE -->
+  <section class="closing">
+    <div class="wrap">
+      <h2 class="closing-title reveal">One more page never hurt anyone.</h2>
+      <p class="reveal">Constance Garnett's 1914 translation is the classic, public-domain English text. Pevear &amp; Volokhonsky and Oliver Ready are more recent alternatives, if you want a different register.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-row">
+    <span>A visual essay, for study and appreciation. Not affiliated with any publisher or estate.</span>
+    <a href="#top">Back to top</a>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
