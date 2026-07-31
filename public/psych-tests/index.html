@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Psych Lab — 5 Tests on Morality &amp; Free Will</title>
+<meta name="description" content="Five short psychological tests, each built around a real experiment — Milgram's obedience study, Zimbardo's prison, Libet's free will delay, the bystander effect, Ariely's honesty research. One case, four questions, then the actual science behind it." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="masthead-top">
+      <span class="seal" aria-hidden="true">&#9670;</span>
+      <div class="masthead-text">
+        <h1>THE PSYCH LAB</h1>
+        <p class="tagline">5 tests on morality &amp; free will, each built on a real experiment</p>
+      </div>
+    </div>
+    <p class="masthead-note">Each test opens with one case file and four questions. Answer honestly — there's no wrong answer, only a reading — then see the actual study or anecdote the test is built on: Milgram's obedience line, Zimbardo's prison, Libet's half-second delay, the bystander effect, and the small, forgivable lies most people tell themselves.</p>
+    <p class="masthead-links"><a href="../paradox-archive/">The Paradox Archive</a> &middot; <a href="../literary-archive/">The Literary Archive</a> — the companion collections of classic thought experiments and novels.</p>
+  </div>
+</header>
+
+<div class="toolbar wrap">
+  <div class="filters" id="filters" role="tablist" aria-label="Filter by theme"></div>
+  <div class="toolbar-right">
+    <button class="dossier-btn" id="dossierBtn" type="button">My Profile <span id="dossierCount">(0)</span></button>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer class="site-foot wrap">
+  <p>Every test is built on a real, cited psychological experiment or historical anecdote — the case is dramatized for one screen, but the study and its actual findings, described at the end of each test, are real. Nothing you answer is sent anywhere or stored beyond your own browser. See also <a href="../paradox-archive/">The Paradox Archive</a> and <a href="../literary-archive/">The Literary Archive</a>.</p>
+</footer>
+
+<!-- Test overlay: case → question → reading -->
+<div class="overlay" id="overlay" hidden>
+  <div class="case-file" id="caseFile" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <button class="close-btn" id="closeBtn" type="button" aria-label="Close test">&times;</button>
+    <div class="cf-tab" id="cfTab"></div>
+    <div class="cf-body">
+
+      <!-- stage: case intro -->
+      <div id="stageCase">
+        <p class="cf-number" id="cfNumber"></p>
+        <h2 id="cfTitle"></h2>
+        <p class="cf-thinker" id="cfSubtitle"></p>
+        <p class="cf-scenario" id="cfCase"></p>
+        <div class="cf-actions">
+          <button class="ghost-btn" id="closeCaseBtn" type="button">Not now</button>
+          <button class="primary-btn" id="beginTestBtn" type="button">Begin the test &rarr;</button>
+        </div>
+      </div>
+
+      <!-- stage: single question -->
+      <div id="stageQuestion" hidden>
+        <div class="cf-progress">
+          <span id="qProgressText">Question 1 of 4</span>
+        </div>
+        <div class="cf-progress-track"><div class="cf-progress-fill" id="qProgressFill"></div></div>
+        <p class="cf-question" id="qPrompt"></p>
+        <div class="cf-choices" id="qChoices"></div>
+      </div>
+
+      <!-- stage: reading + insight -->
+      <div id="stageReading" hidden>
+        <p class="cf-number" id="rNumber"></p>
+        <p class="reading-name" id="rName"></p>
+        <p class="reading-blurb" id="rBlurb"></p>
+        <div class="field-note">
+          <p class="fn-label">The field study behind this test</p>
+          <p id="rInsight"></p>
+        </div>
+        <div class="cf-actions">
+          <button class="ghost-btn" id="retakeTestBtn" type="button">Retake this test</button>
+          <button class="primary-btn" id="doneTestBtn" type="button">Done</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Profile overlay -->
+<div class="overlay" id="dossierOverlay" hidden>
+  <div class="case-file dossier-file" role="dialog" aria-modal="true" aria-labelledby="dfTitle">
+    <button class="close-btn" id="dossierCloseBtn" type="button" aria-label="Close profile">&times;</button>
+    <div class="cf-body">
+      <p class="cf-number">SUBJECT FILE</p>
+      <h2 id="dfTitle">Your Psych Lab Profile</h2>
+      <p class="cf-thinker" id="dfProgress"></p>
+      <div id="dfEmpty" class="df-empty">Take at least one test to begin building your profile.</div>
+      <div id="dfContent" hidden>
+        <div class="traits" id="dfTraits"></div>
+        <div class="cf-actions">
+          <button class="ghost-btn" id="resetBtn" type="button">Reset profile</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
