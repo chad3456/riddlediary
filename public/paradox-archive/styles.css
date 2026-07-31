@@ -272,6 +272,8 @@ main.wrap { padding-top: 30px; padding-bottom: 20px; }
   max-width: 900px;
 }
 
+.site-foot a, .masthead-note a { color: var(--gold); }
+
 /* ───────── Overlay / case file ───────── */
 
 .overlay {
