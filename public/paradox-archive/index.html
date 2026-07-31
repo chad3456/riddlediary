@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Paradox Archive — 48 Case Files in Philosophy</title>
+<meta name="description" content="A browsable archive of 48 classic thought experiments and paradoxes — ethics, logic, mind, metaphysics, religion, and choice — each one an interactive case you rule on yourself." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="masthead-top">
+      <span class="seal" aria-hidden="true">&#9670;</span>
+      <div class="masthead-text">
+        <h1>THE PARADOX ARCHIVE</h1>
+        <p class="tagline">48 case files in applied philosophy — ethics, logic, mind, metaphysics, religion &amp; choice</p>
+      </div>
+    </div>
+    <p class="masthead-note">Every case below is a classic thought experiment or paradox. Open one, render your ruling, and see how it compares to the archive's recorded sample. Rule on enough cases and your own philosophical dossier takes shape.</p>
+  </div>
+</header>
+
+<div class="toolbar wrap">
+  <div class="filters" id="filters" role="tablist" aria-label="Filter by category"></div>
+  <div class="toolbar-right">
+    <input type="search" id="search" placeholder="Search cases, thinkers, keywords…" aria-label="Search cases" />
+    <button class="dossier-btn" id="dossierBtn" type="button">My Dossier <span id="dossierCount">(0)</span></button>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+  <p class="empty-state" id="emptyState" hidden>No cases match that search.</p>
+</main>
+
+<footer class="site-foot wrap">
+  <p>Every scenario is a real, historically attributed thought experiment or paradox — condensed for one screen. The response percentages shown after each ruling are a fixed illustrative sample built into this page, not a live survey; nothing you answer is sent anywhere or stored beyond your own browser.</p>
+</footer>
+
+<!-- Case detail overlay -->
+<div class="overlay" id="overlay" hidden>
+  <div class="case-file" id="caseFile" role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+    <button class="close-btn" id="closeBtn" type="button" aria-label="Close case file">&times;</button>
+    <div class="cf-tab" id="cfTab"></div>
+    <div class="cf-body">
+      <p class="cf-number" id="cfNumber"></p>
+      <h2 id="cfTitle"></h2>
+      <p class="cf-thinker" id="cfThinker"></p>
+      <p class="cf-scenario" id="cfScenario"></p>
+      <p class="cf-question" id="cfQuestion"></p>
+
+      <div class="cf-choices" id="cfChoices"></div>
+
+      <div class="cf-result" id="cfResult" hidden>
+        <p class="result-label">RULING RECORDED — ARCHIVE COMPARISON</p>
+        <div class="bars" id="cfBars"></div>
+        <div class="field-note">
+          <p class="fn-label">Field note</p>
+          <p id="cfNote"></p>
+        </div>
+        <div class="cf-actions">
+          <button class="ghost-btn" id="prevCaseBtn" type="button">&larr; Previous case</button>
+          <button class="primary-btn" id="nextCaseBtn" type="button">Next case &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dossier overlay -->
+<div class="overlay" id="dossierOverlay" hidden>
+  <div class="case-file dossier-file" role="dialog" aria-modal="true" aria-labelledby="dfTitle">
+    <button class="close-btn" id="dossierCloseBtn" type="button" aria-label="Close dossier">&times;</button>
+    <div class="cf-body">
+      <p class="cf-number">PERSONNEL FILE</p>
+      <h2 id="dfTitle">Your Philosophical Dossier</h2>
+      <p class="cf-thinker" id="dfProgress"></p>
+      <div id="dfEmpty" class="df-empty">Open and rule on at least a few cases to begin building your dossier.</div>
+      <div id="dfContent" hidden>
+        <p class="fn-label">Your leading traits</p>
+        <div class="traits" id="dfTraits"></div>
+        <p class="fn-label" style="margin-top:24px;">Full tendency breakdown</p>
+        <div class="bars" id="dfAllBars"></div>
+        <div class="cf-actions">
+          <button class="ghost-btn" id="resetBtn" type="button">Reset dossier</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
