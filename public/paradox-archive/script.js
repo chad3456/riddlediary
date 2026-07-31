@@ -11,6 +11,33 @@
 
   const answers = loadAnswers();
 
+  // ───────── Live crowd data ─────────
+  // Blends the page's fixed illustrative sample with real anonymous rulings
+  // from other visitors, so bars stay meaningful while live votes are few.
+  const BASELINE_SAMPLE = 50;
+  let liveStats = {};
+
+  if (window.ArchiveVotes) {
+    window.ArchiveVotes.fetchStats("paradox").then((stats) => {
+      liveStats = stats;
+      if (!overlay.hidden && currentCaseIndex >= 0) {
+        const c = CASES[currentCaseIndex];
+        const existing = answers[c.id];
+        if (existing) showResult(c, existing.choiceIndex);
+      }
+    });
+  }
+
+  function blendedPercents(c) {
+    const live = liveStats[c.id];
+    const counts = c.choices.map((choice, i) => {
+      const virtual = Math.round((choice.pct / 100) * BASELINE_SAMPLE);
+      return virtual + (live && live[i] ? live[i].votes : 0);
+    });
+    const total = counts.reduce((a, b) => a + b, 0) || 1;
+    return counts.map((n) => Math.round((n / total) * 100));
+  }
+
   function loadAnswers() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -149,6 +176,7 @@
         btn.addEventListener("click", () => {
           answers[c.id] = { choiceIndex: i, tag: choice.tag };
           saveAnswers();
+          if (window.ArchiveVotes) window.ArchiveVotes.recordVote("paradox", c.id, i, choice.tag);
           renderChoices(c, i);
           showResult(c, i);
           renderGrid();
@@ -161,15 +189,16 @@
 
   function showResult(c, pickedIndex) {
     cfBars.innerHTML = "";
+    const pcts = blendedPercents(c);
     c.choices.forEach((choice, i) => {
       const row = document.createElement("div");
       row.className = "bar-row" + (i === pickedIndex ? " mine" : "");
       row.innerHTML = `
         <div class="bar-label">
           <span>${choice.text}${i === pickedIndex ? " — your ruling" : ""}</span>
-          <span class="pct">${choice.pct}%</span>
+          <span class="pct">${pcts[i]}%</span>
         </div>
-        <div class="bar-track"><div class="bar-fill" style="width:${choice.pct}%"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pcts[i]}%"></div></div>
       `;
       cfBars.appendChild(row);
     });
