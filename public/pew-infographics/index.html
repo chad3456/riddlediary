@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pew Infographics</title>
+<meta name="description" content="An app that turns Pew Research Center reports into clean, accessible infographics — charts, stat tiles and data tables generated from a declarative report file." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-inner">
+    <div class="appbar-brand">Pew Infographics <span>· report visualizer</span></div>
+    <label class="sr-only" for="reportPicker" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Choose a report</label>
+    <select class="control" id="reportPicker"></select>
+    <button class="control" id="themeBtn" type="button">Dark mode</button>
+  </div>
+</div>
+
+<div class="wrap" id="report"></div>
+
+<div class="wrap">
+  <footer class="site-foot">
+    <p>This app renders infographics from a declarative report file — add a report by dropping a file in <code>reports/</code> and registering it. Charts follow a validated, colorblind-safe palette, and every chart ships a data table so no value is reachable by hover alone.</p>
+    <p>All figures belong to the <a href="https://www.pewresearch.org/" target="_blank" rel="noopener">Pew Research Center</a>, which is not affiliated with this page. Each figure's immediate source is listed in the data table beneath its chart.</p>
+  </footer>
+</div>
+
+<script src="reports/national-pride-2026.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
