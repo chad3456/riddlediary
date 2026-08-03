@@ -454,6 +454,181 @@ main { padding-bottom: 60px; }
   margin: 14px 0 0;
 }
 
+/* ───────── Library ───────── */
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 26px 0 22px;
+}
+
+.chip-filter {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip-filter:hover { border-color: var(--baseline); color: var(--text-primary); }
+
+.chip-filter.active {
+  background: var(--series-1);
+  border-color: var(--series-1);
+  color: #fff;
+  font-weight: 600;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.report-card {
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.report-card:hover { transform: translateY(-2px); border-color: var(--baseline); }
+
+.rc-topic {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.rc-title { font-size: 17px; font-weight: 620; line-height: 1.3; color: var(--text-primary); }
+
+.rc-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rc-lenses { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; }
+
+.rc-lens {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--plane);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.library-note {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 26px 0 0;
+  max-width: 72ch;
+}
+
+.library-note code {
+  font-size: 11.5px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.back-link {
+  font: inherit;
+  font-size: 12.5px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 0 14px;
+}
+
+.back-link:hover { color: var(--text-primary); }
+
+/* ───────── Line chart ───────── */
+
+.linechart { width: 100%; height: auto; display: block; overflow: visible; }
+.linechart .gridline { stroke: var(--gridline); stroke-width: 1; }
+.linechart .line-path {
+  fill: none;
+  stroke: var(--series-1);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.linechart .dot {
+  fill: var(--series-1);
+  stroke: var(--surface-1); /* 2px surface ring */
+  stroke-width: 2;
+}
+.linechart .axis-text { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.linechart .end-label { fill: var(--text-primary); font-size: 13px; font-weight: 600; }
+
+/* ───────── Coverage table ───────── */
+
+.cov-count { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; }
+.cov-count strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.coverage-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.coverage-table th,
+.coverage-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px;
+  border-bottom: 1px solid var(--gridline);
+}
+
+.coverage-table thead th {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.coverage-table tbody th { font-weight: 600; white-space: nowrap; width: 1%; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--plane);
+  border: 1px solid var(--border);
+}
+
+.chip-k { color: var(--text-secondary); }
+.chip-v { color: var(--text-primary); font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.chip-empty { color: var(--text-muted); font-style: italic; background: none; border-style: dashed; }
+
+.cov-qual { font-size: 12px; color: var(--text-muted); margin: 7px 0 0; line-height: 1.5; }
+
 .site-foot {
   border-top: 1px solid var(--border);
   margin-top: 40px;
