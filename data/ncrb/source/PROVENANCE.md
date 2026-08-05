@@ -93,23 +93,47 @@ Two further files drive the state-by-year choropleth, via
 
 | File | Covers | Origin |
 |---|---|---|
-| `District_wise_IPC_crimes_reported_2001_2018.xlsx` | 2001–2018 (2001–2015 used) | NCRB district returns, via <https://github.com/reethified/India-IPC-Crimes-Datasets> |
+| `District_wise_IPC_crimes_reported_2001_2018.xlsx` | 2001–2018 (all used) | NCRB district returns, via <https://github.com/reethified/India-IPC-Crimes-Datasets> |
 | `india_districts.geojson` | 760 district polygons | <https://github.com/udit-001/india-maps-data> |
 
-### Why the map stops at 2015
+### The map covers 2001–2018
 
-The workbook's 2016, 2017 and 2018 sheets carry a **corrupt YEAR column** — it
-holds a row index (0, 1, 2, …) rather than a year, so no row on those sheets can
-be attributed to a year. They are skipped rather than guessed at. 2013–2015 are
-usable after normalising header spellings (`ROBERRY`, `ASSAULT ON OWMEN`,
-`KIDNAPPING ABDUCTION`).
+**Correction to an earlier version of this file**, which claimed the 2016–2018
+sheets had a corrupt YEAR column. They do not. The earlier build script read the
+year *positionally* at column index 2; on those sheets YEAR sits at index 9, so
+it was reading the `DOWRY` column and seeing what looked like row indices. The
+column is read by header name now. The 2017 sheet has no YEAR column at all —
+its sheet name supplies the year.
 
-### Which crime heads, and why only seven
+All seven sheets are therefore used, after normalising header spellings and
+outright typos in the source (`ROBERRY`, `ASSAULT ON OWMEN`, `DACOITS`,
+`KIDNAPPING ABDUCTION`) and one misspelt state (`HARAYANA` → Haryana, which
+would otherwise have split Haryana into two series).
 
-Only heads present on *every* usable sheet are emitted, so no series has a
-year-shaped hole: murder, rape, riots, theft, robbery, dowry deaths, assault on
-women. Dacoity and kidnapping are dropped — each is missing from at least one
-sheet (2014 replaces dacoity with rash driving; 2015 omits kidnapping).
+### Coverage is per crime head, not one shared range
+
+The sheets disagree about which heads they carry. Requiring a head to appear on
+*every* sheet would cut the map from nine heads to four, so each head instead
+carries its own year list, and the UI offers only those years:
+
+| Head | Years | Not reported |
+|---|---|---|
+| Murder, rape, theft, dowry deaths | 2001–2018 | — |
+| Assault on women | 2001–2018 | 2017 |
+| Robbery | 2001–2017 | — |
+| Kidnapping & abduction | 2001–2018 | 2015, 2016 |
+| Riots | 2001–2016 | — |
+| Dacoity | 2001–2016 | 2014 |
+
+A head is never carried across a sheet that omits it, and the caption under the
+year slider names any skipped year.
+
+### Zero is not the same as missing
+
+A head is emitted for a year whenever the source reported it that year,
+**including when the tally is 0**. An earlier build dropped zero values, which
+painted states with genuinely no dowry deaths as "no data" grey — a different
+and wrong claim. Grey now means only "the source did not report this".
 
 ### Aggregation basis
 
@@ -119,9 +143,15 @@ exists on every sheet, whereas the aggregate rows are missing from some. It runs
 about **3% above** those TOTAL rows because railway/CID/crime-branch units are
 included.
 
-Sanity check: this basis gives **31,945 murders nationally in 2015** against
-NCRB's published figure of roughly 32,127 — a 0.6% difference, consistent with
-the aggregation note above.
+Sanity checks against NCRB's own published national figures:
+
+| Year | Head | This pipeline | NCRB published | Diff |
+|---|---|---|---|---|
+| 2015 | Murder | 31,945 | ~32,127 | −0.6% |
+| 2018 | Murder | 28,944 | ~29,017 | −0.3% |
+| 2018 | Rape | 33,253 | ~33,356 | −0.3% |
+
+All within the tolerance the aggregation note above would predict.
 
 ### Successor states
 

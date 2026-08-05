@@ -17,9 +17,17 @@ missing from some, and it runs about 3% above the sheets' own TOTAL rows
 because it includes railway/CID/crime-branch reporting units that those rows
 leave out. The report states this.
 
-Only 2001-2015 is emitted: the 2016-2018 sheets carry a corrupt YEAR column
-(it holds a row index, not a year), so they cannot be attributed to a year
-safely and are skipped rather than guessed at.
+Coverage is per crime head, not one shared year range. The sheets disagree
+about which heads they carry (2017 drops riots and assault-on-women, 2018 drops
+riots and robbery, 2014 drops dacoity, and so on), so insisting on heads present
+in EVERY sheet would cut the map from nine heads to four. Instead each head
+carries its own list of years, the UI offers only those years, and a head is
+never interpolated across a sheet that does not report it.
+
+The YEAR column is read by header name, and where a sheet has no YEAR column at
+all (2017) the sheet's own name supplies the year. An earlier version of this
+script read the column positionally and mistook the 2016/2017/2018 sheets for
+having corrupt years; they do not.
 """
 
 import json
@@ -36,12 +44,10 @@ XLSX = os.path.join(SRC, "District_wise_IPC_crimes_reported_2001_2018.xlsx")
 GEO = os.path.join(SRC, "india_districts.geojson")
 OUT = os.path.join(ROOT, "public", "pew-infographics", "reports", "india-crime-map-data.js")
 
-# Sheets whose YEAR column is usable. 2016/2017/2018 are excluded on purpose.
-SHEETS = ["2001-2012", "2013", "2014", "2015"]
+SHEETS = ["2001-2012", "2013", "2014", "2015", "2016", "2017", "2018"]
 
-# Header spellings differ per sheet ("ROBERRY", "KIDNAPPING ABDUCTION", ...).
-# Only heads present in EVERY sheet above are emitted, so no series has a
-# year-shaped hole in it.
+# Header spellings differ per sheet, including outright typos in the source
+# ("ROBERRY", "ASSAULT ON OWMEN", "DACOITS").
 CANON = {
     "MURDER": "murder",
     "RAPE": "rape",
@@ -51,8 +57,13 @@ CANON = {
     "ROBERRY": "robbery",
     "DOWRY DEATHS": "dowry_deaths",
     "DOWRY DEATH": "dowry_deaths",
+    "DOWRY": "dowry_deaths",
     "ASSAULT ON WOMEN": "assault_on_women",
     "ASSAULT ON OWMEN": "assault_on_women",
+    "KIDNAPPING AND ABDUCTION": "kidnapping",
+    "KIDNAPPING ABDUCTION": "kidnapping",
+    "DACOITY": "dacoity",
+    "DACOITS": "dacoity",
 }
 
 LABELS = {
@@ -63,6 +74,8 @@ LABELS = {
     "robbery": "Robbery",
     "dowry_deaths": "Dowry deaths",
     "assault_on_women": "Assault on women",
+    "kidnapping": "Kidnapping & abduction",
+    "dacoity": "Dacoity",
 }
 
 AGGREGATE_ROWS = {"TOTAL", "ZZ TOTAL", "TOTAL STATE(S)", "GRAND TOTAL"}
@@ -87,6 +100,7 @@ STATE_ALIASES = {
     "CHATISGARH": "Chhattisgarh",
     "CHHATTISGARH": "Chhattisgarh",
     "TELENGANA": "Telangana",
+    "HARAYANA": "Haryana",  # misspelt in one sheet; would split Haryana in two
 }
 
 
@@ -112,30 +126,31 @@ def as_int(v):
 
 wb = openpyxl.load_workbook(XLSX, read_only=True, data_only=True)
 
-# Which canonical heads exist in every usable sheet?
-per_sheet_heads = []
-for sn in SHEETS:
-    hdr = [str(h).strip().upper() if h else "" for h in next(wb[sn].iter_rows(values_only=True))]
-    per_sheet_heads.append({CANON[h] for h in hdr if h in CANON})
-HEADS = sorted(set.intersection(*per_sheet_heads))
-
 # state -> year -> head -> value
 data = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
-skipped_years = set()
+# head -> set of years the SOURCE actually reports it (a head absent from a
+# sheet must stay absent, not silently become zero)
+head_years = defaultdict(set)
+sheet_report = []
 
 for sn in SHEETS:
     ws = wb[sn]
     rows = ws.iter_rows(values_only=True)
     hdr = [str(h).strip().upper() if h else "" for h in next(rows)]
+
     idx = {}
     for i, h in enumerate(hdr):
-        if h in CANON and CANON[h] in HEADS and CANON[h] not in idx:
+        if h in CANON and CANON[h] not in idx:
             idx[CANON[h]] = i
     try:
-        iS, iD, iY = hdr.index("STATE"), hdr.index("DISTRICT"), hdr.index("YEAR")
+        iS, iD = hdr.index("STATE"), hdr.index("DISTRICT")
     except ValueError:
         continue
+    iY = hdr.index("YEAR") if "YEAR" in hdr else None
+    # A single-year sheet with no YEAR column: its name is the year.
+    sheet_year = int(sn) if re.fullmatch(r"\d{4}", sn) else None
 
+    n_rows = 0
     for r in rows:
         if r is None or iS >= len(r):
             continue
@@ -145,20 +160,28 @@ for sn in SHEETS:
         st = canon_state(r[iS])
         if not st:
             continue
-        m = re.match(r"\s*(\d{4})", str(r[iY] or ""))
-        if not m:
-            skipped_years.add(sn)
+
+        y = None
+        if iY is not None and iY < len(r):
+            m = re.match(r"\s*(\d{4})", str(r[iY] or ""))
+            if m:
+                y = int(m.group(1))
+        if y is None:
+            y = sheet_year
+        if y is None or not (2001 <= y <= 2018):
             continue
-        y = int(m.group(1))
-        if not (2001 <= y <= 2018):
-            skipped_years.add(sn)
-            continue
+
+        n_rows += 1
         for head, i in idx.items():
             if i < len(r):
                 data[st][y][head] += as_int(r[i])
+                head_years[head].add(y)
+
+    sheet_report.append((sn, n_rows, sorted(idx)))
 
 wb.close()
 
+HEADS = sorted(head_years)
 years = sorted({y for st in data for y in data[st]})
 states = sorted(data)
 
@@ -234,16 +257,24 @@ matched = sorted(set(shapes) & set(states))
 data_only = sorted(set(states) - set(shapes))
 geo_only = sorted(set(shapes) - set(states))
 
+# A head is emitted for a year whenever the SOURCE reported that head that
+# year — including when the tally is 0. Dropping zeros would paint a state
+# with genuinely no dowry deaths as "no data" grey, which is a different and
+# wrong claim. Absent means "the source did not report this", nothing else.
 out_series = {}
 for st in states:
     out_series[st] = {
-        str(y): {h: data[st][y][h] for h in HEADS if data[st][y][h]} for y in sorted(data[st])
+        str(y): {h: data[st][y][h] for h in HEADS if y in head_years[h]}
+        for y in sorted(data[st])
     }
 
 payload = {
     "meta": {
         "years": years,
         "heads": HEADS,
+        # Each head offers only the years the source reports it for. A head is
+        # never carried across a sheet that omits it.
+        "headYears": {h: sorted(head_years[h]) for h in HEADS},
         "labels": LABELS,
         "states_with_data": len(states),
         "states_with_geometry": len(shapes),
@@ -275,11 +306,20 @@ print(f"years        : {years[0]}-{years[-1]} ({len(years)})")
 print(f"crime heads  : {', '.join(HEADS)}")
 print(f"states data  : {len(states)}   geometry: {len(shapes)}   matched: {len(matched)}")
 if data_only:
-    print(f"  data but no geometry : {data_only}")
+    print(f"  !! data but no geometry (name mismatch?) : {data_only}")
 if geo_only:
     print(f"  geometry but no data : {geo_only}")
-if skipped_years:
-    print(f"sheets skipped for unusable YEAR values: {sorted(skipped_years)}")
-tot = sum(data[st][years[-1]]["murder"] for st in states if years[-1] in data[st])
-print(f"murders {years[-1]}  : {tot:,}")
+print("per-sheet rows / heads:")
+for sn, n, hs in sheet_report:
+    print(f"  {sn:11} {n:>5} rows  {len(hs)} heads")
+print("per-head year coverage:")
+for h in HEADS:
+    ys = sorted(head_years[h])
+    gaps = [y for y in range(ys[0], ys[-1] + 1) if y not in head_years[h]]
+    print(f"  {h:18} {ys[0]}-{ys[-1]} ({len(ys)} yrs)" + (f"  gaps: {gaps}" if gaps else ""))
+for probe in ("murder", "rape"):
+    for yy in (2015, 2018):
+        if yy in head_years[probe]:
+            t = sum(data[st][yy][probe] for st in states if yy in data[st])
+            print(f"national {probe} {yy}: {t:,}")
 print(f"wrote {os.path.relpath(OUT, ROOT)}  ({size/1024:.0f} KB)")

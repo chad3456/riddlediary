@@ -355,8 +355,8 @@ window.PEW_REPORTS["india-crime-ncrb"] = {
     {
       "type": "map",
       "title": "Crime by state, year by year",
-      "subtitle": "Recorded cases for seven IPC crime heads that NCRB reported consistently from 2001 to 2015. Drag the year, switch the crime head, or press play to watch the map move.",
-      "note": "These are *counts, not rates* — no state population series by year is vendored here, so Uttar Pradesh and Maharashtra read dark partly because they are populous. Colour bins are fixed across all years, so a shade means the same number in 2001 as it does in 2015; they are quantile bins because the distribution is heavily right-skewed. Two territories are shaded from their parent state, because that is who reported them at the time: Telangana before 2014 (part of Andhra Pradesh until June that year) and Ladakh throughout (part of Jammu & Kashmir until 2019). Hovering either says so, and neither is double-counted in the table."
+      "subtitle": "Recorded cases for nine IPC crime heads from NCRB district returns, 2001 to 2018. Drag the year, switch the crime head, or press play to watch the map move.",
+      "note": "These are *counts, not rates* — no state population series by year is vendored here, so Uttar Pradesh and Maharashtra read dark partly because they are populous. Colour bins are fixed across all years, so a shade means the same number in 2001 as it does in 2018; they are quantile bins because the distribution is heavily right-skewed. Each crime head offers only the years NCRB actually reports it for — the caption under the slider names any year the source skips, and no gap is filled in. Two territories are shaded from their parent state, because that is who reported them at the time: Telangana before 2014 (part of Andhra Pradesh until June that year) and Ladakh throughout (part of Jammu & Kashmir until 2019). Hovering either says so, and neither is double-counted in the table."
     },
     {
       "type": "coverage",

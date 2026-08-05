@@ -619,6 +619,13 @@ main { padding-bottom: 60px; }
 
 .mc-slider { width: 100%; accent-color: var(--series-1); cursor: pointer; }
 
+.map-range {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: -6px 0 14px;
+  font-variant-numeric: tabular-nums;
+}
+
 .map-wrap { position: relative; }
 
 .india-map {

@@ -295,6 +295,7 @@
           </label>
           <button class="control" data-map-play type="button">▶ Play</button>
         </div>
+        <p class="map-range" data-map-gaps></p>
 
         <div class="map-wrap">
           <svg class="india-map" data-map-svg viewBox="0 0 100 100" role="img"
@@ -326,6 +327,7 @@
       const yearEl = root.querySelector("[data-map-year]");
       const headSel = root.querySelector("[data-map-head]");
       const playBtn = root.querySelector("[data-map-play]");
+      const gapEl = root.querySelector("[data-map-gaps]");
       const tbody = root.querySelector("[data-map-tbody]");
       const years = M.meta.years;
 
@@ -364,9 +366,14 @@
         .join("");
       svg.innerHTML = groups;
 
+      // Each head reports its own years — the source sheets disagree about
+      // which crimes they carry, so the slider is rebuilt per head rather than
+      // offering years that would silently read as zero.
+      const yearsFor = (head) => (M.meta.headYears && M.meta.headYears[head]) || years;
+
       function valuesFor(head) {
         const out = [];
-        years.forEach((y) => {
+        yearsFor(head).forEach((y) => {
           Object.keys(M.series).forEach((st) => {
             const v = (M.series[st][String(y)] || {})[head];
             if (typeof v === "number") out.push(v);
@@ -430,7 +437,8 @@
 
       function paint() {
         const head = headSel.value;
-        const year = years[Number(slider.value)];
+        const ys = yearsFor(head);
+        const year = ys[Math.min(Number(slider.value), ys.length - 1)];
         yearEl.textContent = year;
 
         const rows = [];
@@ -459,8 +467,20 @@
       }
 
       function rebin() {
-        bins = binsFor(headSel.value);
-        drawLegend(headSel.value);
+        const head = headSel.value;
+        const ys = yearsFor(head);
+        const prev = Number(slider.value);
+        slider.max = String(ys.length - 1);
+        slider.value = String(Math.min(prev, ys.length - 1));
+        bins = binsFor(head);
+        drawLegend(head);
+        // Name any year the source skips for this head, so a jump in the
+        // slider is explained rather than looking like missing years.
+        const gaps = [];
+        for (let y = ys[0]; y <= ys[ys.length - 1]; y++) if (!ys.includes(y)) gaps.push(y);
+        gapEl.textContent = gaps.length
+          ? `${ys[0]}\u2013${ys[ys.length - 1]}, except ${gaps.join(", ")} \u2014 not reported for this crime`
+          : `${ys[0]}\u2013${ys[ys.length - 1]}`;
         paint();
       }
 
@@ -477,7 +497,8 @@
         const v = p.getAttribute("data-value");
         const via = p.getAttribute("data-via");
         const label = M.meta.labels[headSel.value] || headSel.value;
-        const yr = years[Number(slider.value)];
+        const ysT = yearsFor(headSel.value);
+        const yr = ysT[Math.min(Number(slider.value), ysT.length - 1)];
         tip.innerHTML =
           `<strong>${esc(p.getAttribute("data-state"))}</strong>` +
           `<span>${label}, ${yr}: ${v === "" ? "no data" : fmtNum(Number(v))}</span>` +
@@ -505,7 +526,7 @@
         }
         playBtn.textContent = "❚❚ Pause";
         timer = setInterval(() => {
-          const next = (Number(slider.value) + 1) % years.length;
+          const next = (Number(slider.value) + 1) % yearsFor(headSel.value).length;
           slider.value = String(next);
           paint();
         }, 850);
