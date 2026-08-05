@@ -584,6 +584,119 @@ main { padding-bottom: 60px; }
 .linechart .axis-text { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .linechart .end-label { fill: var(--text-primary); font-size: 13px; font-weight: 600; }
 
+/* ───────── Choropleth map ───────── */
+
+:root { --map-nodata: #e6e5df; --map-stroke: #fcfcfb; }
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) { --map-nodata: #2c2c2a; --map-stroke: #1a1a19; }
+}
+:root[data-theme="dark"] { --map-nodata: #2c2c2a; --map-stroke: #1a1a19; }
+
+.map-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.mc-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mc-grow { flex: 1 1 260px; }
+
+.mc-label {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 650;
+}
+.mc-label strong {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  font-size: 13px;
+}
+
+.mc-slider { width: 100%; accent-color: var(--series-1); cursor: pointer; }
+
+.map-wrap { position: relative; }
+
+.india-map {
+  width: 100%;
+  height: auto;
+  max-height: 78vh;
+  display: block;
+}
+
+.state-path {
+  /* stroke is set to the fill in JS so a state's districts merge into one
+     solid shape; the mesh would otherwise imply district-level data */
+  stroke-width: 0.1;
+  transition: fill 0.35s ease;
+  cursor: crosshair;
+}
+
+.state-path.is-hover {
+  stroke: var(--text-primary);
+  stroke-width: 0.4;
+  paint-order: stroke;
+}
+
+@media (prefers-reduced-motion: reduce) { .state-path { transition: none; } }
+
+.map-tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 11px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+  z-index: 5;
+  max-width: 220px;
+}
+.map-tip strong { display: block; color: var(--text-primary); }
+.map-tip span { color: var(--text-secondary); display: block; }
+.map-tip .tip-via { color: var(--text-muted); font-size: 11.5px; margin-top: 3px; }
+
+.map-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lg-title {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.lg-scale { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.lg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.lg-sw {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.lg-nodata { background: var(--map-nodata); }
+
 /* ───────── Coverage table ───────── */
 
 .cov-count { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; }

@@ -247,13 +247,272 @@
       <section class="block">
         <h2 class="block-title">${md(b.title)}</h2>
         ${b.subtitle ? `<p class="block-sub">${md(b.subtitle)}</p>` : ""}
-        <p class="cov-count"><strong>${sourced}</strong> of <strong>${b.data.length}</strong> countries have at least one sourced figure.</p>
+        <p class="cov-count"><strong>${sourced}</strong> of <strong>${b.data.length}</strong> ${esc(b.unitLabel || "countries")} have at least one sourced figure.</p>
         <table class="coverage-table">
           <thead><tr><th>${esc(b.columns[0])}</th><th>${esc(b.columns[1])}</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
         ${b.note ? `<p class="block-note">${md(b.note)}</p>` : ""}
       </section>`;
+  }
+
+  // Choropleth. Magnitude across an ordered domain → sequential, one hue,
+  // light→dark, with a scale legend and a distinct (non-ramp) no-data tone.
+  // Bins are computed once over ALL years so a colour means the same thing in
+  // 2001 as in 2015 — re-binning per year would make the animation lie.
+  const RAMP = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#104281"];
+
+  function renderMap(b) {
+    const M = window.INDIA_CRIME_MAP;
+    if (!M) return "";
+    const tableId = nextId();
+    const mapId = nextId();
+    const heads = M.meta.heads;
+    const years = M.meta.years;
+
+    const headOpts = heads
+      .map(
+        (h, i) =>
+          `<option value="${esc(h)}"${i === heads.indexOf("murder") ? " selected" : ""}>${esc(M.meta.labels[h] || h)}</option>`
+      )
+      .join("");
+
+    return `
+      <section class="block" data-map="${mapId}">
+        <h2 class="block-title">${md(b.title)}</h2>
+        ${b.subtitle ? `<p class="block-sub">${md(b.subtitle)}</p>` : ""}
+
+        <div class="map-controls">
+          <label class="mc-field">
+            <span class="mc-label">Crime</span>
+            <select class="control" data-map-head>${headOpts}</select>
+          </label>
+          <label class="mc-field mc-grow">
+            <span class="mc-label">Year <strong data-map-year>${years[years.length - 1]}</strong></span>
+            <input class="mc-slider" type="range" data-map-slider
+                   min="0" max="${years.length - 1}" value="${years.length - 1}" step="1"
+                   aria-label="Year" />
+          </label>
+          <button class="control" data-map-play type="button">▶ Play</button>
+        </div>
+
+        <div class="map-wrap">
+          <svg class="india-map" data-map-svg viewBox="0 0 100 100" role="img"
+               aria-label="Choropleth of recorded crime by state"></svg>
+          <div class="map-tip" data-map-tip hidden></div>
+        </div>
+
+        <div class="map-legend" data-map-legend></div>
+
+        ${b.note ? `<p class="block-note">${md(b.note)}</p>` : ""}
+        ${tableToggle(tableId)}
+        <table class="data-table" id="${tableId}" hidden>
+          <thead><tr><th>State / UT</th><th class="num">Cases</th><th>Year</th></tr></thead>
+          <tbody data-map-tbody></tbody>
+        </table>
+      </section>`;
+  }
+
+  // Wire every map block on the page after its HTML is in the DOM.
+  function initMaps() {
+    const M = window.INDIA_CRIME_MAP;
+    if (!M) return;
+
+    document.querySelectorAll("[data-map]").forEach((root) => {
+      const svg = root.querySelector("[data-map-svg]");
+      const tip = root.querySelector("[data-map-tip]");
+      const legendEl = root.querySelector("[data-map-legend]");
+      const slider = root.querySelector("[data-map-slider]");
+      const yearEl = root.querySelector("[data-map-year]");
+      const headSel = root.querySelector("[data-map-head]");
+      const playBtn = root.querySelector("[data-map-play]");
+      const tbody = root.querySelector("[data-map-tbody]");
+      const years = M.meta.years;
+
+      // Equirectangular, x scaled by cos(mean latitude) so India isn't stretched.
+      let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+      Object.values(M.shapes).forEach((rings) =>
+        rings.forEach((r) =>
+          r.forEach(([lon, lat]) => {
+            if (lon < minX) minX = lon;
+            if (lon > maxX) maxX = lon;
+            if (lat < minY) minY = lat;
+            if (lat > maxY) maxY = lat;
+          })
+        )
+      );
+      const kx = Math.cos((((minY + maxY) / 2) * Math.PI) / 180);
+      const w = (maxX - minX) * kx;
+      const h = maxY - minY;
+      const PAD = 2;
+      const scale = (100 - PAD * 2) / Math.max(w, h);
+      const offX = PAD + ((100 - PAD * 2) - w * scale) / 2;
+      const offY = PAD + ((100 - PAD * 2) - h * scale) / 2;
+      const px = (lon) => offX + (lon - minX) * kx * scale;
+      const py = (lat) => offY + (maxY - lat) * scale;
+
+      svg.setAttribute("viewBox", `0 0 100 ${100}`);
+
+      // Build the paths once; only fills change on year/head switches.
+      const groups = Object.entries(M.shapes)
+        .map(([state, rings]) => {
+          const d = rings
+            .map((r) => "M" + r.map(([lo, la]) => `${px(lo).toFixed(2)},${py(la).toFixed(2)}`).join("L") + "Z")
+            .join(" ");
+          return `<path class="state-path" data-state="${esc(state)}" d="${d}"></path>`;
+        })
+        .join("");
+      svg.innerHTML = groups;
+
+      function valuesFor(head) {
+        const out = [];
+        years.forEach((y) => {
+          Object.keys(M.series).forEach((st) => {
+            const v = (M.series[st][String(y)] || {})[head];
+            if (typeof v === "number") out.push(v);
+          });
+        });
+        return out.sort((a, b2) => a - b2);
+      }
+
+      // Quantile bin edges over the pooled multi-year distribution. Counts are
+      // heavily right-skewed (UP and MP dwarf the small UTs), so equal-width
+      // bins would put almost every state in the lightest class.
+      function binsFor(head) {
+        const vals = valuesFor(head).filter((v) => v > 0);
+        if (!vals.length) return [];
+        const q = (p) => vals[Math.min(vals.length - 1, Math.floor(p * vals.length))];
+        const edges = [q(0.2), q(0.4), q(0.6), q(0.8), q(0.93)];
+        return edges.filter((e, i) => i === 0 || e > edges[i - 1]);
+      }
+
+      let bins = [];
+      const colorFor = (v) => {
+        if (typeof v !== "number") return null;
+        let i = 0;
+        while (i < bins.length && v > bins[i]) i++;
+        return RAMP[Math.min(i, RAMP.length - 1)];
+      };
+
+      function drawLegend(head) {
+        const label = M.meta.labels[head] || head;
+        const swatches = RAMP.map((c, i) => {
+          const lo = i === 0 ? 0 : bins[i - 1];
+          const hi = i < bins.length ? bins[i] : null;
+          const txt = hi === null ? `${fmtNum(lo)}+` : `${fmtNum(lo)}–${fmtNum(hi)}`;
+          return `<span class="lg-item"><span class="lg-sw" style="background:${c}"></span>${txt}</span>`;
+        }).join("");
+        legendEl.innerHTML =
+          `<span class="lg-title">${esc(label)} — cases recorded</span>` +
+          `<span class="lg-scale">${swatches}` +
+          `<span class="lg-item"><span class="lg-sw lg-nodata"></span>no data</span></span>`;
+      }
+
+      // States created part-way through the series. Before a split, the
+      // territory's crime was reported under the parent, so the parent's
+      // figure is what covers that ground — shade it as such and say so in the
+      // tooltip, rather than leaving a hole that reads as "no crime here".
+      const PARENT_OF = {
+        Telangana: "Andhra Pradesh",
+        Ladakh: "Jammu and Kashmir",
+      };
+
+      function lookup(state, year, head) {
+        const own = ((M.series[state] || {})[String(year)] || {})[head];
+        if (typeof own === "number") return { value: own, via: null };
+        const parent = PARENT_OF[state];
+        if (parent) {
+          const pv = ((M.series[parent] || {})[String(year)] || {})[head];
+          if (typeof pv === "number") return { value: pv, via: parent };
+        }
+        return { value: null, via: null };
+      }
+
+      function paint() {
+        const head = headSel.value;
+        const year = years[Number(slider.value)];
+        yearEl.textContent = year;
+
+        const rows = [];
+        svg.querySelectorAll(".state-path").forEach((p) => {
+          const st = p.getAttribute("data-state");
+          const { value, via } = lookup(st, year, head);
+          p.style.fill = colorFor(value) || "var(--map-nodata)";
+          // stroke matches fill so districts of one state merge into a solid
+          // shape — the data is state-level, so a district mesh would imply a
+          // resolution this map does not have
+          p.style.stroke = p.style.fill;
+          p.setAttribute("data-value", value === null ? "" : value);
+          p.setAttribute("data-via", via || "");
+          // Only the state's own reported figure enters the table, so a parent
+          // value is never counted twice in the ranking.
+          if (typeof value === "number" && !via) rows.push([st, value]);
+        });
+
+        rows.sort((a, b2) => b2[1] - a[1]);
+        tbody.innerHTML = rows
+          .map(
+            ([st, v]) =>
+              `<tr><td>${esc(st)}</td><td class="num">${fmtNum(v)}</td><td>${year}</td></tr>`
+          )
+          .join("");
+      }
+
+      function rebin() {
+        bins = binsFor(headSel.value);
+        drawLegend(headSel.value);
+        paint();
+      }
+
+      // hover / focus
+      svg.addEventListener("mousemove", (e) => {
+        const p = e.target.closest(".state-path");
+        if (!p) {
+          tip.hidden = true;
+          svg.querySelectorAll(".is-hover").forEach((n) => n.classList.remove("is-hover"));
+          return;
+        }
+        svg.querySelectorAll(".is-hover").forEach((n) => n.classList.remove("is-hover"));
+        p.classList.add("is-hover");
+        const v = p.getAttribute("data-value");
+        const via = p.getAttribute("data-via");
+        const label = M.meta.labels[headSel.value] || headSel.value;
+        const yr = years[Number(slider.value)];
+        tip.innerHTML =
+          `<strong>${esc(p.getAttribute("data-state"))}</strong>` +
+          `<span>${label}, ${yr}: ${v === "" ? "no data" : fmtNum(Number(v))}</span>` +
+          (via ? `<span class="tip-via">reported under ${esc(via)} in ${yr}</span>` : "");
+        const r = svg.getBoundingClientRect();
+        tip.style.left = `${e.clientX - r.left + 14}px`;
+        tip.style.top = `${e.clientY - r.top + 14}px`;
+        tip.hidden = false;
+      });
+      svg.addEventListener("mouseleave", () => {
+        tip.hidden = true;
+        svg.querySelectorAll(".is-hover").forEach((n) => n.classList.remove("is-hover"));
+      });
+
+      slider.addEventListener("input", paint);
+      headSel.addEventListener("change", rebin);
+
+      let timer = null;
+      playBtn.addEventListener("click", () => {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+          playBtn.textContent = "▶ Play";
+          return;
+        }
+        playBtn.textContent = "❚❚ Pause";
+        timer = setInterval(() => {
+          const next = (Number(slider.value) + 1) % years.length;
+          slider.value = String(next);
+          paint();
+        }, 850);
+      });
+
+      rebin();
+    });
   }
 
   function renderNotes(b) {
@@ -316,6 +575,7 @@
     bar: renderBar,
     compare: renderCompare,
     line: renderLine,
+    map: renderMap,
     coverage: renderCoverage,
     notes: renderNotes,
   };
@@ -421,6 +681,7 @@
 
   function show(view, id) {
     root.innerHTML = view === "report" ? renderReport(id) : renderLibrary();
+    initMaps();
     document.title =
       view === "report" && window.PEW_REPORTS[id]
         ? `${window.PEW_REPORTS[id].meta.title} — Pew Infographics`

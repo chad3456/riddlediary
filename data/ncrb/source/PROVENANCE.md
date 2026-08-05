@@ -85,3 +85,52 @@ writes it into the report, so the gap is shown rather than hidden.
 - 2017–2024 is therefore a genuine gap in this repository. To close it, drop
   the corresponding NCRB tables into this directory and extend
   `scripts/build_ncrb.py`; nothing else needs changing.
+
+## Map layer
+
+Two further files drive the state-by-year choropleth, via
+`scripts/build_ncrb_map.py`:
+
+| File | Covers | Origin |
+|---|---|---|
+| `District_wise_IPC_crimes_reported_2001_2018.xlsx` | 2001–2018 (2001–2015 used) | NCRB district returns, via <https://github.com/reethified/India-IPC-Crimes-Datasets> |
+| `india_districts.geojson` | 760 district polygons | <https://github.com/udit-001/india-maps-data> |
+
+### Why the map stops at 2015
+
+The workbook's 2016, 2017 and 2018 sheets carry a **corrupt YEAR column** — it
+holds a row index (0, 1, 2, …) rather than a year, so no row on those sheets can
+be attributed to a year. They are skipped rather than guessed at. 2013–2015 are
+usable after normalising header spellings (`ROBERRY`, `ASSAULT ON OWMEN`,
+`KIDNAPPING ABDUCTION`).
+
+### Which crime heads, and why only seven
+
+Only heads present on *every* usable sheet are emitted, so no series has a
+year-shaped hole: murder, rape, riots, theft, robbery, dowry deaths, assault on
+women. Dacoity and kidnapping are dropped — each is missing from at least one
+sheet (2014 replaces dacoity with rash driving; 2015 omits kidnapping).
+
+### Aggregation basis
+
+Per state-year, all district rows are summed and the sheets' own aggregate rows
+(`TOTAL`, `ZZ TOTAL`) are excluded, so nothing is counted twice. This basis
+exists on every sheet, whereas the aggregate rows are missing from some. It runs
+about **3% above** those TOTAL rows because railway/CID/crime-branch units are
+included.
+
+Sanity check: this basis gives **31,945 murders nationally in 2015** against
+NCRB's published figure of roughly 32,127 — a 0.6% difference, consistent with
+the aggregation note above.
+
+### Successor states
+
+Two territories in the modern GeoJSON did not exist for most of the data period.
+They are shaded from the state that actually reported them, labelled as such on
+hover, and excluded from the ranking table so nothing is double-counted:
+
+- **Telangana** — part of Andhra Pradesh until June 2014; has its own NCRB rows from 2014.
+- **Ladakh** — part of Jammu & Kashmir until 2019; has no rows in this period at all.
+
+Boundaries are the GeoJSON publisher's and are used as supplied; they are not a
+statement about any territorial claim.
