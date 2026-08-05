@@ -20,8 +20,21 @@
   // *emphasis* → <em>, so report copy can stress a word without inlining HTML.
   const md = (s) => esc(s).replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
+  // Thousands-separated, so a 7-digit case count never renders as 2975711.
+  // Values below 10,000 keep their decimals (crime *rates* live in that range).
+  const fmtNum = (v) =>
+    Math.abs(v) >= 10000 ? Math.round(v).toLocaleString("en-US") : String(v);
+
+  // Compact form for chart labels, where a full 9-character number collides.
+  const fmtCompact = (v) => {
+    const a = Math.abs(v);
+    if (a >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+    if (a >= 1e4) return `${Math.round(v / 1e3)}k`;
+    return String(v);
+  };
+
   // "~30%" for figures the source stated only in words ("roughly three-in-ten").
-  const fmt = (d, unit) => `${d.approx ? "~" : ""}${d.value}${unit || ""}`;
+  const fmt = (d, unit) => `${d.approx ? "~" : ""}${fmtNum(d.value)}${unit || ""}`;
 
   let uid = 0;
   const nextId = () => `viz-${++uid}`;
@@ -33,7 +46,7 @@
       <section class="hero">
         <div class="hero-value">${esc(b.value)}</div>
         <div class="hero-label">${esc(b.label)}</div>
-        ${b.note ? `<p class="hero-note">${esc(b.note)}</p>` : ""}
+        ${b.note ? `<p class="hero-note">${md(b.note)}</p>` : ""}
       </section>`;
   }
 
@@ -44,7 +57,7 @@
         <div class="stat">
           <div class="stat-value">${esc(it.value)}</div>
           <div class="stat-label">${esc(it.label)}</div>
-          ${it.note ? `<p class="stat-note">${esc(it.note)}</p>` : ""}
+          ${it.note ? `<p class="stat-note">${md(it.note)}</p>` : ""}
         </div>`
       )
       .join("");
@@ -159,7 +172,7 @@
       .map(
         (t) =>
           `<line x1="${PAD_L}" y1="${y(t).toFixed(1)}" x2="${PAD_L + plotW}" y2="${y(t).toFixed(1)}" class="gridline"/>
-           <text x="${PAD_L - 8}" y="${(y(t) + 4).toFixed(1)}" class="axis-text" text-anchor="end">${t}</text>`
+           <text x="${PAD_L - 8}" y="${(y(t) + 4).toFixed(1)}" class="axis-text" text-anchor="end">${fmtCompact(t)}</text>`
       )
       .join("");
 
@@ -168,7 +181,7 @@
     const dots = b.data
       .map(
         (d, i) =>
-          `<circle cx="${x(i).toFixed(1)}" cy="${y(d.value).toFixed(1)}" r="5" class="dot"><title>${esc(d.label)}: ${d.value}${esc(b.unit || "")}</title></circle>`
+          `<circle cx="${x(i).toFixed(1)}" cy="${y(d.value).toFixed(1)}" r="5" class="dot"><title>${esc(d.label)}: ${fmtNum(d.value)}${esc(b.unit || "")}</title></circle>`
       )
       .join("");
 
@@ -180,7 +193,7 @@
       .join("");
 
     const last = b.data[b.data.length - 1];
-    const endLabel = `<text x="${(x(b.data.length - 1) + 12).toFixed(1)}" y="${(y(last.value) + 4).toFixed(1)}" class="end-label">${last.value}${esc(b.unit || "")}</text>`;
+    const endLabel = `<text x="${(x(b.data.length - 1) + 12).toFixed(1)}" y="${(y(last.value) + 4).toFixed(1)}" class="end-label">${fmtCompact(last.value)}${esc(b.unit || "")}</text>`;
 
     return `
       <section class="block">
@@ -197,8 +210,8 @@
         ${tableToggle(tableId)}
         ${dataTable(
           tableId,
-          ["Wave", "Share", "Source"],
-          b.data.map((d) => [d.label, `${d.value}${b.unit || ""}`, d.src || b.src || "—"])
+          ["Wave", "Value", "Source"],
+          b.data.map((d) => [d.label, `${fmtNum(d.value)}${b.unit || ""}`, d.src || b.src || "—"])
         )}
       </section>`;
   }
@@ -211,7 +224,9 @@
           ? r.figures
               .map(
                 (f) =>
-                  `<span class="chip"><span class="chip-k">${esc(f.k)}</span><span class="chip-v">${f.approx ? "~" : ""}${f.v}%</span></span>`
+                  // unit defaults to "%" so survey reports keep their old shape;
+                  // count-based reports pass unit: "" explicitly.
+                  `<span class="chip"><span class="chip-k">${esc(f.k)}</span><span class="chip-v">${f.approx ? "~" : ""}${fmtNum(f.v)}${f.unit === undefined ? "%" : esc(f.unit)}</span></span>`
               )
               .join("")
           : `<span class="chip chip-empty">no figure sourced</span>`;
@@ -247,7 +262,7 @@
         (it) => `
         <div class="note-item">
           <h3 class="note-heading">${esc(it.heading)}</h3>
-          <p class="note-body">${esc(it.body)}</p>
+          <p class="note-body">${md(it.body)}</p>
         </div>`
       )
       .join("");
@@ -265,7 +280,7 @@
     return `
       <div class="bar-axis">
         <div></div>
-        <div class="bar-axis-ticks"><span>0</span><span>${max}${esc(unit || "")}</span></div>
+        <div class="bar-axis-ticks"><span>0</span><span>${fmtCompact(max)}${esc(unit || "")}</span></div>
       </div>`;
   }
 
