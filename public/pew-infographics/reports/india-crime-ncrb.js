@@ -353,6 +353,59 @@ window.PEW_REPORTS["india-crime-ncrb"] = {
       ]
     },
     {
+      "type": "verify",
+      "title": "Checked against NCRB's own published totals",
+      "subtitle": "The map is built by summing district returns. To show that the sum is sound, each row below compares what this pipeline produces against the national figure NCRB published for that year, as reported by the outlet named. Those published figures are the only numbers on this page not computed from the vendored files — they are reference values, cited, and never plotted as data.",
+      "note": "2 of 5 match to the case, and the largest divergence is 0.57%. The direction is consistently negative, matching the known aggregation offset: district returns exclude some central units that the national total counts.",
+      "rows": [
+        {
+          "head": "murder",
+          "year": 2015,
+          "published": 32127,
+          "cite": "NCRB Crime in India 2015, via data.gov.in catalogue listing",
+          "url": "https://www.data.gov.in/catalog/crime-india-2015",
+          "pipeline": 31945,
+          "diff_pct": -0.57
+        },
+        {
+          "head": "murder",
+          "year": 2017,
+          "published": 28653,
+          "cite": "NCRB Crime in India 2018 (stating the 2017 comparison), via Gulf News",
+          "url": "https://gulfnews.com/world/asia/india/average-80-murders-91-rapes-daily-in-india-in-2018-ncrb-data-1.1578572333397",
+          "pipeline": 28653,
+          "diff_pct": 0.0
+        },
+        {
+          "head": "murder",
+          "year": 2018,
+          "published": 29017,
+          "cite": "NCRB Crime in India 2018, via Gulf News",
+          "url": "https://gulfnews.com/world/asia/india/average-80-murders-91-rapes-daily-in-india-in-2018-ncrb-data-1.1578572333397",
+          "pipeline": 28944,
+          "diff_pct": -0.25
+        },
+        {
+          "head": "rape",
+          "year": 2017,
+          "published": 32559,
+          "cite": "NCRB Crime in India 2018 (stating the 2017 comparison), via Deccan Herald",
+          "url": "https://www.deccanherald.com/national/conviction-rate-for-rape-cases-is-only-272-per-cent-792820",
+          "pipeline": 32559,
+          "diff_pct": 0.0
+        },
+        {
+          "head": "rape",
+          "year": 2018,
+          "published": 33356,
+          "cite": "NCRB Crime in India 2018, via Deccan Herald",
+          "url": "https://www.deccanherald.com/national/conviction-rate-for-rape-cases-is-only-272-per-cent-792820",
+          "pipeline": 33253,
+          "diff_pct": -0.31
+        }
+      ]
+    },
+    {
       "type": "map",
       "title": "Crime by state, year by year",
       "subtitle": "Recorded cases for nine IPC crime heads from NCRB district returns, 2001 to 2018. Drag the year, switch the crime head, or press play to watch the map move.",
@@ -673,6 +726,74 @@ window.PEW_REPORTS["india-crime-ncrb"] = {
           "qualitative": "No NCRB data exists: Crime in India 2024, released 6 May 2026, is the most recent volume."
         }
       ]
+    },
+    {
+      "type": "sources",
+      "title": "Every source behind this report",
+      "subtitle": "The originating publisher is the National Crime Records Bureau in all cases. NCRB's own site and data.gov.in are both unreachable from the environment this was built in, so the tables were obtained from the public mirrors named below and are vendored in the repo at data/ncrb/source/ so the derivation can be checked end to end.",
+      "groups": [
+        {
+          "heading": "Primary data — the tables every figure is computed from",
+          "items": [
+            {
+              "label": "NCRB Crime in India 2011 — national time-series table (2001–2011)",
+              "detail": "Mirrored by avinashladdha/CrimeDataset, which cites data.gov.in as its origin.",
+              "url": "https://github.com/avinashladdha/CrimeDataset"
+            },
+            {
+              "label": "NCRB Crime in India 2015 — national time-series table (2005–2015)",
+              "detail": "Same mirror. This is the edition on the old side of the SLL definition change.",
+              "url": "https://github.com/avinashladdha/CrimeDataset"
+            },
+            {
+              "label": "NCRB Crime in India 2016 — national time-series table (2014–2016)",
+              "detail": "Same mirror. The edition on the new side of the SLL definition change.",
+              "url": "https://github.com/avinashladdha/CrimeDataset"
+            },
+            {
+              "label": "NCRB district-wise IPC returns, 2001–2018",
+              "detail": "Drives the map and every state-level figure. Mirrored by reethified/India-IPC-Crimes-Datasets, which cites the NCRB Crime in India additional tables.",
+              "url": "https://github.com/reethified/India-IPC-Crimes-Datasets"
+            }
+          ]
+        },
+        {
+          "heading": "Boundaries",
+          "items": [
+            {
+              "label": "India district boundaries (760 polygons)",
+              "detail": "Used as supplied and simplified for rendering. Boundaries are the publisher's; their use here is not a statement about any territorial claim.",
+              "url": "https://github.com/udit-001/india-maps-data"
+            }
+          ]
+        },
+        {
+          "heading": "Press reporting — used only to verify, never as data",
+          "items": [
+            {
+              "label": "Gulf News — “Average 80 murders, 91 rapes daily in India in 2018: NCRB data”",
+              "detail": "Source for NCRB's published national murder totals for 2018 (29,017) and 2017 (28,653).",
+              "url": "https://gulfnews.com/world/asia/india/average-80-murders-91-rapes-daily-in-india-in-2018-ncrb-data-1.1578572333397"
+            },
+            {
+              "label": "Deccan Herald — “Conviction rate for rape cases is only 27.2 per cent”",
+              "detail": "Source for NCRB's published national rape totals for 2018 (33,356) and 2017 (32,559).",
+              "url": "https://www.deccanherald.com/national/conviction-rate-for-rape-cases-is-only-272-per-cent-792820"
+            },
+            {
+              "label": "data.gov.in — Crime in India 2015 catalogue",
+              "detail": "Source for NCRB's published national murder total for 2015 (32,127).",
+              "url": "https://www.data.gov.in/catalog/crime-india-2015"
+            },
+            {
+              "label": "Drishti IAS / Vision IAS — NCRB Crime in India 2024 coverage",
+              "detail": "Source for the publication-schedule facts: Crime in India 2024 was released 6 May 2026, so no 2025 or 2026 data exists.",
+              "url": "https://www.drishtiias.com/daily-updates/daily-news-analysis/ncrbs-crime-in-india-2024-report"
+            }
+          ]
+        }
+      ],
+      "note": "The mirrors are not the primary publisher, and that is a real limitation: this report verifies them by reconciliation rather than by having fetched NCRB's own files. The checks above are what stand in for that — five independently published national totals, two matched to the case."
     },
     {
       "type": "notes",

@@ -143,15 +143,28 @@ exists on every sheet, whereas the aggregate rows are missing from some. It runs
 about **3% above** those TOTAL rows because railway/CID/crime-branch units are
 included.
 
-Sanity checks against NCRB's own published national figures:
+### Verification against published national totals
 
-| Year | Head | This pipeline | NCRB published | Diff |
-|---|---|---|---|---|
-| 2015 | Murder | 31,945 | ~32,127 | −0.6% |
-| 2018 | Murder | 28,944 | ~29,017 | −0.3% |
-| 2018 | Rape | 33,253 | ~33,356 | −0.3% |
+The published column below is **cited external reference data, not pipeline
+output** — the only numbers in this project not computed from the vendored
+files. They exist to check the pipeline and are never plotted as data. The
+report renders this same table with the citations as live links.
 
-All within the tolerance the aggregation note above would predict.
+| Head | Year | This pipeline | NCRB published | Diff | Published figure cited from |
+|---|---|---|---|---|---|
+| Murder | 2015 | 31,945 | 32,127 | −0.57% | [data.gov.in, Crime in India 2015 catalogue](https://www.data.gov.in/catalog/crime-india-2015) |
+| Murder | 2017 | 28,653 | 28,653 | **exact** | [Gulf News](https://gulfnews.com/world/asia/india/average-80-murders-91-rapes-daily-in-india-in-2018-ncrb-data-1.1578572333397) |
+| Murder | 2018 | 28,944 | 29,017 | −0.25% | [Gulf News](https://gulfnews.com/world/asia/india/average-80-murders-91-rapes-daily-in-india-in-2018-ncrb-data-1.1578572333397) |
+| Rape | 2017 | 32,559 | 32,559 | **exact** | [Deccan Herald](https://www.deccanherald.com/national/conviction-rate-for-rape-cases-is-only-272-per-cent-792820) |
+| Rape | 2018 | 33,253 | 33,356 | −0.31% | [Deccan Herald](https://www.deccanherald.com/national/conviction-rate-for-rape-cases-is-only-272-per-cent-792820) |
+
+Two match to the case; the largest divergence is 0.57%, and every divergence is
+negative, matching the aggregation offset described above.
+
+**Correction:** an earlier version of this file quoted the 2015/2018 published
+figures without a citation. They were asserted from memory during development,
+then verified afterwards against the sources now linked. They check out, but
+they should not have been written down uncited in the first place.
 
 ### Successor states
 

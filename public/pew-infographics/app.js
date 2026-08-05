@@ -536,6 +536,73 @@
     });
   }
 
+  // Pipeline output vs independently published totals. The published column is
+  // cited reference data, not pipeline output, and is labelled as such.
+  function renderVerify(b) {
+    const rows = b.rows
+      .map(
+        (r) => `
+        <tr>
+          <td>${esc(r.head.replace(/_/g, " "))}</td>
+          <td>${r.year}</td>
+          <td class="num">${fmtNum(r.pipeline)}</td>
+          <td class="num">${fmtNum(r.published)}</td>
+          <td class="num ${r.diff_pct === 0 ? "is-exact" : ""}">${
+            r.diff_pct === 0 ? "exact" : r.diff_pct + "%"
+          }</td>
+          <td class="src"><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.cite)}</a></td>
+        </tr>`
+      )
+      .join("");
+    return `
+      <section class="block">
+        <h2 class="block-title">${md(b.title)}</h2>
+        ${b.subtitle ? `<p class="block-sub">${md(b.subtitle)}</p>` : ""}
+        <div class="table-scroll">
+          <table class="data-table verify-table">
+            <thead><tr>
+              <th>Crime</th><th>Year</th>
+              <th class="num">This pipeline</th>
+              <th class="num">NCRB published</th>
+              <th class="num">Diff</th>
+              <th>Published figure cited from</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${b.note ? `<p class="block-note">${md(b.note)}</p>` : ""}
+      </section>`;
+  }
+
+  function renderSources(b) {
+    const groups = b.groups
+      .map(
+        (g) => `
+        <div class="src-group">
+          <h3 class="src-heading">${esc(g.heading)}</h3>
+          <ul class="src-list">
+            ${g.items
+              .map(
+                (it) => `
+              <li class="src-item">
+                <a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.label)}</a>
+                <span class="src-detail">${esc(it.detail)}</span>
+              </li>`
+              )
+              .join("")}
+          </ul>
+        </div>`
+      )
+      .join("");
+    return `
+      <section class="block">
+        <h2 class="block-title">${md(b.title)}</h2>
+        ${b.subtitle ? `<p class="block-sub">${md(b.subtitle)}</p>` : ""}
+        ${groups}
+        ${b.note ? `<p class="block-note">${md(b.note)}</p>` : ""}
+      </section>`;
+  }
+
   function renderNotes(b) {
     const items = b.items
       .map(
@@ -597,6 +664,8 @@
     compare: renderCompare,
     line: renderLine,
     map: renderMap,
+    verify: renderVerify,
+    sources: renderSources,
     coverage: renderCoverage,
     notes: renderNotes,
   };
