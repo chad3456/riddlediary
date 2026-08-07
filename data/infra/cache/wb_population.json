@@ -1,0 +1,48 @@
+{
+  "bytes_full": 552112,
+  "cadence_days": 365,
+  "fetched_at": "2026-08-07T11:40:13+00:00",
+  "landing": "https://github.com/datasets/population",
+  "lineage": "worldbank-wdi",
+  "provenance_tier": "community_mirror",
+  "publisher": "World Bank WDI, republished by the `datasets` project",
+  "rows": {
+    "2014": {
+      "population": 1312277191.0
+    },
+    "2015": {
+      "population": 1328024498.0
+    },
+    "2016": {
+      "population": 1343944296.0
+    },
+    "2017": {
+      "population": 1359657400.0
+    },
+    "2018": {
+      "population": 1374659064.0
+    },
+    "2019": {
+      "population": 1389030312.0
+    },
+    "2020": {
+      "population": 1402617695.0
+    },
+    "2021": {
+      "population": 1414203896.0
+    },
+    "2022": {
+      "population": 1425423212.0
+    },
+    "2023": {
+      "population": 1438069596.0
+    },
+    "2024": {
+      "population": 1450935791.0
+    }
+  },
+  "sha256_full": "7d2dd6a17f5ed7916de1f89a9c116791e64d207f2e2f6ce47c57e1ab46f0088a",
+  "source_id": "wb_population",
+  "title": "World Bank population (community mirror)",
+  "url": "https://raw.githubusercontent.com/datasets/population/main/data/population.csv"
+}

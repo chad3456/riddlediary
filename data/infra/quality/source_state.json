@@ -1,0 +1,97 @@
+{
+  "sources": {
+    "cea_installed_capacity": {
+      "consecutive_failures": 1,
+      "env_reachable": false,
+      "last_attempt": "2026-08-07T11:40:04+00:00",
+      "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+      "last_status": "BLOCKED"
+    },
+    "data_gov_in": {
+      "consecutive_failures": 1,
+      "env_reachable": false,
+      "last_attempt": "2026-08-07T11:40:05+00:00",
+      "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+      "last_status": "BLOCKED"
+    },
+    "indian_railways_ar": {
+      "consecutive_failures": 1,
+      "env_reachable": false,
+      "last_attempt": "2026-08-07T11:40:04+00:00",
+      "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+      "last_status": "BLOCKED"
+    },
+    "jjm_dashboard": {
+      "consecutive_failures": 1,
+      "env_reachable": false,
+      "last_attempt": "2026-08-07T11:40:05+00:00",
+      "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+      "last_status": "BLOCKED"
+    },
+    "morth_road_stats": {
+      "consecutive_failures": 1,
+      "env_reachable": false,
+      "last_attempt": "2026-08-07T11:40:04+00:00",
+      "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+      "last_status": "BLOCKED"
+    },
+    "owid_co2": {
+      "bytes": 14377942,
+      "consecutive_failures": 0,
+      "env_reachable": true,
+      "last_attempt": "2026-08-07T11:40:02+00:00",
+      "last_changed_at": "2026-08-07T11:40:02+00:00",
+      "last_detail": "HTTP 200",
+      "last_status": "OK_CHANGED",
+      "last_success": "2026-08-07T11:40:02+00:00",
+      "sha256": "7f78e2b218ce4bb8c538bbec04fdc9a7982e8d40bff972e650df603899edd5f6"
+    },
+    "owid_energy": {
+      "bytes": 9229369,
+      "consecutive_failures": 0,
+      "env_reachable": true,
+      "last_attempt": "2026-08-07T11:40:01+00:00",
+      "last_changed_at": "2026-08-07T11:40:01+00:00",
+      "last_detail": "HTTP 200",
+      "last_status": "OK_CHANGED",
+      "last_success": "2026-08-07T11:40:01+00:00",
+      "sha256": "266f2e2baad7975351bc9bb4aa061d22b1da9fe4c47d51d2ac6071e01e171f76"
+    },
+    "pmgsy_omms": {
+      "consecutive_failures": 1,
+      "env_reachable": false,
+      "last_attempt": "2026-08-07T11:40:05+00:00",
+      "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+      "last_status": "BLOCKED"
+    },
+    "trai_subscription": {
+      "consecutive_failures": 1,
+      "env_reachable": false,
+      "last_attempt": "2026-08-07T11:40:04+00:00",
+      "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+      "last_status": "BLOCKED"
+    },
+    "wb_gdp": {
+      "bytes": 562767,
+      "consecutive_failures": 0,
+      "env_reachable": true,
+      "last_attempt": "2026-08-07T11:40:03+00:00",
+      "last_changed_at": "2026-08-07T11:40:03+00:00",
+      "last_detail": "HTTP 200",
+      "last_status": "OK_CHANGED",
+      "last_success": "2026-08-07T11:40:03+00:00",
+      "sha256": "8d84ef6bcaccf740c01c5ed7566aae8f7b149d0e2c20001e441efd3cb5b2fa86"
+    },
+    "wb_population": {
+      "bytes": 552112,
+      "consecutive_failures": 0,
+      "env_reachable": true,
+      "last_attempt": "2026-08-07T11:40:03+00:00",
+      "last_changed_at": "2026-08-07T11:40:03+00:00",
+      "last_detail": "HTTP 200",
+      "last_status": "OK_CHANGED",
+      "last_success": "2026-08-07T11:40:03+00:00",
+      "sha256": "7d2dd6a17f5ed7916de1f89a9c116791e64d207f2e2f6ce47c57e1ab46f0088a"
+    }
+  }
+}

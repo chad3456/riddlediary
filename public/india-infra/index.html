@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>India Infrastructure Explorer</title>
+<meta name="description" content="Explore Indian infrastructure indicators since 2014, normalised per million people, and compare India against any country — with every figure carrying its source and a data-quality score." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="appbar">
+  <div class="appbar-inner">
+    <div class="brand">India Infrastructure Explorer <span>· per-capita indicators, cross-country</span></div>
+    <button class="control" id="themeBtn" type="button">Dark mode</button>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="panel" id="pickerPanel">
+    <p class="panel-title">Indicator</p>
+    <input class="search" id="indSearch" type="search" placeholder="Search indicators…" aria-label="Search indicators" />
+    <div class="ind-list" id="indList"></div>
+  </aside>
+
+  <main>
+    <div class="panel" id="chartPanel"></div>
+    <div class="panel" id="metaPanel" style="margin-top:18px"></div>
+  </main>
+</div>
+
+<div class="foot">
+  <p>Every value is loaded from a generated dataset built by <code>scripts/build_infra.py</code> from vendored source files; no figure is entered by hand. Each indicator carries its publisher, source URL, and a data-quality score derived from provenance, corroboration, completeness and recency.</p>
+  <p>Population denominators for per-capita and per-million figures come from the World Bank population series, cross-checked against Our World in Data. Both are shown in the indicator's source panel.</p>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

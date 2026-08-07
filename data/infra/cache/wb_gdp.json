@@ -1,0 +1,45 @@
+{
+  "bytes_full": 562767,
+  "cadence_days": 365,
+  "fetched_at": "2026-08-07T11:40:14+00:00",
+  "landing": "https://github.com/datasets/gdp",
+  "lineage": "worldbank-wdi",
+  "provenance_tier": "community_mirror",
+  "publisher": "World Bank WDI, republished by the `datasets` project",
+  "rows": {
+    "2014": {
+      "gdp_current_usd": 2039126479155.269
+    },
+    "2015": {
+      "gdp_current_usd": 2103588360044.3894
+    },
+    "2016": {
+      "gdp_current_usd": 2294796885663.67
+    },
+    "2017": {
+      "gdp_current_usd": 2651474262755.592
+    },
+    "2018": {
+      "gdp_current_usd": 2702929641648.14
+    },
+    "2019": {
+      "gdp_current_usd": 2835606256558.8438
+    },
+    "2020": {
+      "gdp_current_usd": 2674851578586.8647
+    },
+    "2021": {
+      "gdp_current_usd": 3167270623260.5225
+    },
+    "2022": {
+      "gdp_current_usd": 3353470496885.9478
+    },
+    "2023": {
+      "gdp_current_usd": 3549918918777.5317
+    }
+  },
+  "sha256_full": "8d84ef6bcaccf740c01c5ed7566aae8f7b149d0e2c20001e441efd3cb5b2fa86",
+  "source_id": "wb_gdp",
+  "title": "World Bank GDP, current US$ (community mirror)",
+  "url": "https://raw.githubusercontent.com/datasets/gdp/main/data/gdp.csv"
+}

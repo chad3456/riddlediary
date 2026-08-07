@@ -1,0 +1,90 @@
+{
+  "bytes_full": 14377942,
+  "cadence_days": 180,
+  "fetched_at": "2026-08-07T11:40:12+00:00",
+  "landing": "https://github.com/owid/co2-data",
+  "lineage": "owid-energy",
+  "provenance_tier": "aggregator",
+  "publisher": "Our World in Data",
+  "rows": {
+    "2014": {
+      "co2": 2148.052,
+      "co2_per_capita": 1.637,
+      "energy_per_capita": 5831.643,
+      "gdp": 6875186158349.0,
+      "population": 1312277184.0
+    },
+    "2015": {
+      "co2": 2231.817,
+      "co2_per_capita": 1.681,
+      "energy_per_capita": 5943.03,
+      "gdp": 7391521519812.0,
+      "population": 1328024494.0
+    },
+    "2016": {
+      "co2": 2352.54,
+      "co2_per_capita": 1.75,
+      "energy_per_capita": 6148.213,
+      "gdp": 8057465593010.0,
+      "population": 1343944296.0
+    },
+    "2017": {
+      "co2": 2425.722,
+      "co2_per_capita": 1.784,
+      "energy_per_capita": 6304.287,
+      "gdp": 8550029645172.0,
+      "population": 1359657398.0
+    },
+    "2018": {
+      "co2": 2595.227,
+      "co2_per_capita": 1.888,
+      "energy_per_capita": 6593.169,
+      "gdp": 9173201683791.0,
+      "population": 1374659067.0
+    },
+    "2019": {
+      "co2": 2611.175,
+      "co2_per_capita": 1.88,
+      "energy_per_capita": 6682.068,
+      "gdp": 9595463242427.0,
+      "population": 1389030307.0
+    },
+    "2020": {
+      "co2": 2422.732,
+      "co2_per_capita": 1.727,
+      "energy_per_capita": 6268.437,
+      "gdp": 8945313249462.0,
+      "population": 1402617694.0
+    },
+    "2021": {
+      "co2": 2675.778,
+      "co2_per_capita": 1.892,
+      "energy_per_capita": 6749.358,
+      "gdp": 9801621018003.0,
+      "population": 1414203896.0
+    },
+    "2022": {
+      "co2": 2831.132,
+      "co2_per_capita": 1.986,
+      "energy_per_capita": 7057.187,
+      "gdp": 10476248645535.0,
+      "population": 1425423209.0
+    },
+    "2023": {
+      "co2": 3062.756,
+      "co2_per_capita": 2.13,
+      "energy_per_capita": 7529.44,
+      "population": 1438069597.0
+    },
+    "2024": {
+      "co2": 3193.478,
+      "co2_per_capita": 2.201,
+      "energy_per_capita": 7812.928,
+      "population": 1450935785.0
+    }
+  },
+  "sha256_full": "7f78e2b218ce4bb8c538bbec04fdc9a7982e8d40bff972e650df603899edd5f6",
+  "source_id": "owid_co2",
+  "title": "Our World in Data \u2014 CO2 and Greenhouse Gas Emissions",
+  "url": "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
+}
