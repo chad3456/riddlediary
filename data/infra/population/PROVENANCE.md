@@ -9,28 +9,61 @@ data point, so any normalised figure can be reconstructed from the raw value.
 | `population_worldbank.csv` | 17,196 | 1960–2024, all countries | [datasets/population](https://github.com/datasets/population), World Bank series |
 | `population_owid.csv` | 38,332 | 1850–2024, 218 ISO3 countries | Extracted from [owid/co2-data](https://github.com/owid/co2-data) (population + GDP columns only) |
 
-## Cross-check
+## CORRECTION — the earlier version of this file was wrong
 
-India population, the two files against each other:
+An earlier version claimed the two files "agree to within floating-point
+rounding", evidenced with four Indian rows. **That generalisation was wrong and
+is retracted.** It is true for India and false globally.
 
-| Year | World Bank | OWID | Diff |
-|---|---|---|---|
-| 2010 | 1,243,481,564 | 1,243,481,565 | 0.00% |
-| 2014 | 1,312,277,191 | 1,312,277,184 | −0.00% |
-| 2020 | 1,402,617,695 | 1,402,617,694 | −0.00% |
-| 2023 | 1,438,069,596 | 1,438,069,597 | 0.00% |
+Measured across all 13,360 shared country-years:
 
-They agree to within floating-point rounding — differences of one to seven
-people on a 1.3-billion base.
+| Divergence | Country-years |
+|---|---|
+| > 1% | 1,501 |
+| > 5% | 385 |
+| worst | **49.5%** |
 
-**This proves consistency, not independence.** OWID sources population from the
-UN World Population Prospects / World Bank lineage, so the two files share an
-upstream. Agreement here means neither has been corrupted in transit; it is not
-a second opinion on India's population. Treat the denominator as one source,
-not two.
+The worst cases are Moldova (WB 2.30M vs OWID 3.44M for 1966 — almost certainly
+Transnistria counted in one and not the other), and similar territorial-boundary
+disagreements elsewhere.
+
+India's worst divergence across the whole period is **0.0000%**, which is
+precisely why a four-row India spot-check looked flawless and hid a real problem.
+Credit for catching this goes to the verification agent, which checked all
+shared country-years rather than a sample.
+
+### What this means in practice
+
+- **For India, the denominator is not in doubt.** Every India per-capita figure
+  in the explorer is safe on this axis.
+- **For cross-country comparison it can matter.** If you compare India against
+  Moldova, Albania, Qatar, Curaçao, Seychelles or Togo, the per-capita result
+  depends on which population series was used. The record carries
+  `population_source` so you can see which one produced any given figure.
+- The two files are **not independent sources.** Both descend from the UN World
+  Population Prospects / World Bank lineage. Where they agree, that is evidence
+  of clean transit, not a second opinion. Treat them as one source.
 
 ## Why not fetch from the World Bank directly
 
 `api.worldbank.org` and `datacatalog.worldbank.org` are both blocked by this
 environment's egress policy (403 on CONNECT). These GitHub-hosted copies are
 the reachable route, and are vendored so the pipeline is reproducible offline.
+
+## Reproducing the divergence check
+
+```
+python3 - <<'PY'
+import csv
+wb={}
+for r in csv.DictReader(open('data/infra/population/population_worldbank.csv')):
+    try: wb[(r['Country Code'],int(r['Year']))]=float(r['Value'])
+    except: pass
+ow={}
+for r in csv.DictReader(open('data/infra/population/population_owid.csv')):
+    try: ow[(r['iso_code'],int(r['year']))]=float(r['population'])
+    except: pass
+div=sorted(((abs(ow[k]-wb[k])/wb[k]*100,k) for k in set(wb)&set(ow) if wb[k]),reverse=True)
+print(f">1%: {sum(1 for d in div if d[0]>1)}  >5%: {sum(1 for d in div if d[0]>5)}  max: {div[0]}")
+PY
+```

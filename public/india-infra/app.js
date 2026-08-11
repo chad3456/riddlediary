@@ -443,7 +443,9 @@
     const score = typeof q.score === "number" ? q.score : null;
     const scoreColor =
       score === null ? "var(--deemph)" : score >= 75 ? "var(--good)" : score >= 50 ? "var(--warn)" : "var(--bad)";
-    const fresh = (q.freshness || "unknown").toLowerCase();
+    // tolerate freshness arriving as a string or as an object with .state
+    const freshRaw = q.freshness && typeof q.freshness === "object" ? q.freshness.state : q.freshness;
+    const fresh = String(freshRaw || "unknown").toLowerCase();
     const badge = fresh === "blocked" ? "blocked" : fresh === "stale" || fresh === "due" ? "stale" : "fresh";
 
     metaPanel.innerHTML = `
@@ -457,7 +459,7 @@
         </div>
         <div class="meta-cell">
           <div class="meta-k">Freshness</div>
-          <div class="meta-v"><span class="badge ${badge}">${esc(q.freshness || "unknown")}</span></div>
+          <div class="meta-v"><span class="badge ${badge}">${esc(freshRaw || "unknown")}</span></div>
           <div class="meta-note">${esc(q.last_updated ? "Last updated " + q.last_updated : "No update timestamp")}</div>
         </div>
         <div class="meta-cell">

@@ -109,7 +109,7 @@ SOURCES = [
         "landing": "https://github.com/owid/energy-data",
         "url": "https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv",
         "provenance_tier": "aggregator",
-        "lineage": "owid-energy",
+        "lineage": "owid",
         "cadence_days": 180,
         "parser": "owid_wide_csv",
         "parser_args": {
@@ -122,9 +122,10 @@ SOURCES = [
             ],
         },
         "feeds": [
-            "elec_generation_twh", "elec_renewables_share", "elec_low_carbon_share",
-            "elec_solar_twh", "elec_wind_twh", "elec_demand_per_capita_kwh",
-            "energy_per_capita_kwh", "carbon_intensity_elec", "population",
+            "electricity_generation_twh", "renewables_share_elec_pct",
+            "low_carbon_share_elec_pct", "solar_electricity_twh",
+            "wind_electricity_twh", "electricity_demand_twh",
+            "energy_per_capita_kwh", "population_persons",
         ],
         "notes": (
             "OWID compiles this from Ember and the Energy Institute Statistical "
@@ -141,15 +142,16 @@ SOURCES = [
         "provenance_tier": "aggregator",
         # Same lineage root as owid_energy on purpose: the CO2 dataset imports
         # OWID's own energy series. Agreement between the two is an internal
-        # consistency check, NOT independent corroboration, and the scorer
-        # must not be allowed to count it as such.
-        "lineage": "owid-energy",
+        # consistency check, NOT independent corroboration, and the scorer must
+        # not be allowed to count it as such.
+        "lineage": "owid",
         "cadence_days": 180,
         "parser": "owid_wide_csv",
         "parser_args": {
             "fields": ["population", "gdp", "co2", "co2_per_capita", "energy_per_capita"],
         },
-        "feeds": ["co2_per_capita_t", "energy_per_capita_kwh", "population"],
+        "feeds": ["co2_per_capita_t", "co2_emissions_mt", "energy_per_capita_kwh",
+                  "population_persons"],
         "notes": "Shares a lineage with owid_energy. Consistency check only.",
     },
     {
@@ -163,7 +165,7 @@ SOURCES = [
         "cadence_days": 365,
         "parser": "wb_long_csv",
         "parser_args": {"value_field": "population"},
-        "feeds": ["population"],
+        "feeds": ["population_persons"],
         "notes": (
             "Genuinely lineage-distinct from OWID for population: World Bank's "
             "own estimates rather than OWID's UN WPP/HYDE blend. This is the "
@@ -188,6 +190,26 @@ SOURCES = [
             "which is constant international-$ (PPP): 2014 is 2.04e12 here vs "
             "6.88e12 there. Same name, different quantity. Cross-checking them "
             "would manufacture a ~70% 'divergence' that means nothing."
+        ),
+    },
+    {
+        "id": "cdiac_fossil_co2",
+        "title": "CDIAC fossil-fuel CO2 emissions by nation (community mirror)",
+        "publisher": "CDIAC / Oak Ridge, republished by the `datasets` project",
+        "landing": "https://github.com/datasets/co2-fossil-by-nation",
+        "url": "https://raw.githubusercontent.com/datasets/co2-fossil-by-nation/main/data/fossil-fuel-co2-emissions-by-nation.csv",
+        "provenance_tier": "community_mirror",
+        "lineage": "cdiac",
+        "cadence_days": 365,
+        "parser": "cdiac_csv",
+        "parser_args": {},
+        "feeds": ["co2_emissions_mt"],
+        "notes": (
+            "Lineage-distinct from OWID, whose CO2 series comes via the Global "
+            "Carbon Project. Reported in thousand tonnes of CARBON, so it needs "
+            "a 44/12 conversion to tonnes of CO2 before any comparison; the "
+            "binding carries that scale factor. Ends at 2020, so it corroborates "
+            "2014-2020 only."
         ),
     },
 
@@ -309,163 +331,92 @@ SOURCES = [
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Indicator registry
+# Indicator layer
 #
-#   bindings          ordered; bindings[0] is the primary. Each binding names a
-#                     source, the field within it, and a scale factor to a
-#                     common unit.
-#   comparable        whether this binding may be cross-checked numerically
-#                     against the primary. False means same name, different
-#                     quantity.
-#   coverage_end      last year the indicator is expected to have. None means
-#                     "last complete calendar year".
-#   series_break      documented definition change, or None.
+# scripts/ingest_infra.py (agent 1) already produces the canonical India series
+# in data/infra/clean/indicators.json, under agent 2's schema. This module does
+# NOT duplicate that. It adds the two things the canonical file cannot carry
+# about itself:
+#
+#   CORROBORATORS        lineage-distinct second opinions on a canonical
+#                        indicator, fetched by this pipeline, so that
+#                        cross-source divergence is actually measurable.
+#
+#   UNSOURCED_INDICATORS indicators the dashboard wants and no reachable
+#                        machine source supplies. Registering them keeps the
+#                        gap visible instead of letting it vanish by omission.
+#
+# LINEAGE_OF_FILE maps the raw files the canonical ingest reads back to a
+# provenance root, because two files from one publisher are not two sources.
 # ─────────────────────────────────────────────────────────────────────────────
 
-INDICATORS = [
-    {
-        "id": "elec_generation_twh",
-        "label": "Electricity generation",
-        "unit": "TWh",
-        "category": "power",
-        "bindings": [{"source": "owid_energy", "field": "electricity_generation", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "elec_renewables_share",
-        "label": "Renewables share of electricity",
-        "unit": "%",
-        "category": "power",
-        "bindings": [{"source": "owid_energy", "field": "renewables_share_elec", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "elec_low_carbon_share",
-        "label": "Low-carbon share of electricity",
-        "unit": "%",
-        "category": "power",
-        "bindings": [{"source": "owid_energy", "field": "low_carbon_share_elec", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "elec_solar_twh",
-        "label": "Solar generation",
-        "unit": "TWh",
-        "category": "power",
-        "bindings": [{"source": "owid_energy", "field": "solar_electricity", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "elec_wind_twh",
-        "label": "Wind generation",
-        "unit": "TWh",
-        "category": "power",
-        "bindings": [{"source": "owid_energy", "field": "wind_electricity", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "elec_demand_per_capita_kwh",
-        "label": "Electricity demand per capita",
-        "unit": "kWh",
-        "category": "power",
-        "bindings": [{"source": "owid_energy", "field": "electricity_demand_per_capita", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "energy_per_capita_kwh",
-        "label": "Primary energy per capita",
-        "unit": "kWh",
-        "category": "power",
-        "bindings": [
-            {"source": "owid_energy", "field": "energy_per_capita", "scale": 1.0, "comparable": True},
-            # Same lineage — an internal consistency check, not corroboration.
-            {"source": "owid_co2", "field": "energy_per_capita", "scale": 1.0, "comparable": True},
-        ],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "carbon_intensity_elec",
-        "label": "Carbon intensity of electricity",
-        "unit": "gCO2/kWh",
-        "category": "power",
-        "bindings": [{"source": "owid_energy", "field": "carbon_intensity_elec", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "co2_per_capita_t",
-        "label": "CO2 emissions per capita",
-        "unit": "t",
-        "category": "emissions",
-        "bindings": [{"source": "owid_co2", "field": "co2_per_capita", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "population",
-        "label": "Population",
-        "unit": "persons",
-        "category": "context",
-        "bindings": [
-            {"source": "owid_energy", "field": "population", "scale": 1.0, "comparable": True},
-            {"source": "wb_population", "field": "population", "scale": 1.0, "comparable": True},
-        ],
-        "coverage_end": None,
-        "series_break": None,
-    },
-    {
-        "id": "gdp_current_usd",
-        "label": "GDP (current US$)",
-        "unit": "USD",
-        "category": "context",
-        "bindings": [
-            {"source": "wb_gdp", "field": "gdp_current_usd", "scale": 1.0, "comparable": True},
-            # OWID's `gdp` is constant international-$ (PPP). Registered so the
-            # mismatch is documented, flagged non-comparable so no bogus
-            # divergence is ever computed from it.
-            {"source": "owid_energy", "field": "gdp", "scale": 1.0, "comparable": False,
-             "note": "constant international-$ (PPP), not current US$"},
-        ],
-        "coverage_end": None,
-        "series_break": None,
-    },
+#: Lineage roots are PUBLISHER-level, not file-level. Two datasets from one
+#: compiler are one source however many files they arrive in: OWID's CO2
+#: dataset imports OWID's own energy series, and its population column and the
+#: energy file's population column are the same numbers. Treating those as
+#: mutual corroboration would be self-congratulation.
+LINEAGE_OF_FILE = {
+    "data/infra/raw/owid-energy-data.csv": "owid",
+    "data/infra/raw/owid-co2-data.csv": "owid",
+    "data/infra/population/population_owid.csv": "owid",
+    "data/infra/population/population_worldbank.csv": "worldbank-wdi",
+}
 
-    # ── Indicators with no reachable source in this environment ──────────────
+#: Fallback when a canonical record names a file or URL we do not recognise.
+#: Matched as a case-insensitive substring of the record's source_publisher, so
+#: new files from a publisher already in the registry resolve without an edit.
+PUBLISHER_LINEAGE = [
+    ("our world in data", "owid"),
+    ("owid", "owid"),
+    ("world bank", "worldbank-wdi"),
+    ("cdiac", "cdiac"),
+    ("ember", "ember"),
+    ("energy institute", "energy-institute"),
+]
+
+#: Canonical indicator id -> extra bindings drawn from this pipeline's cache.
+#: `scale` converts the cached source's native units into the canonical unit,
+#: and is applied at comparison time so the conversion stays auditable.
+CORROBORATORS = {
+    "population_persons": [
+        {"source": "wb_population", "field": "population", "scale": 1.0,
+         "note": "World Bank estimate vs OWID's UN WPP/HYDE blend"},
+    ],
+    "co2_emissions_mt": [
+        # thousand tonnes of carbon -> million tonnes of CO2: (44/12)/1000.
+        {"source": "cdiac_fossil_co2", "field": "total_kt_c", "scale": 44.0 / 12.0 / 1000.0,
+         "note": "CDIAC, converted from kt carbon; covers 2014-2020 only"},
+    ],
+}
+
+#: Indicators with no reachable machine source in any environment we have.
+#: These score low, and should: we hold no values for them at all.
+UNSOURCED_INDICATORS = [
     {
         "id": "installed_capacity_gw",
         "label": "Installed generation capacity",
         "unit": "GW",
-        "category": "power",
-        "bindings": [{"source": "cea_installed_capacity", "field": "total_capacity_mw", "scale": 0.001, "comparable": True}],
-        "coverage_end": None,
+        "category": "electricity",
+        "source": "cea_installed_capacity",
         "series_break": None,
     },
     {
         "id": "renewable_capacity_gw",
         "label": "Renewable installed capacity",
         "unit": "GW",
-        "category": "power",
-        "bindings": [{"source": "cea_installed_capacity", "field": "res_capacity_mw", "scale": 0.001, "comparable": True}],
-        "coverage_end": None,
+        "category": "electricity",
+        "source": "cea_installed_capacity",
         "series_break": (
             "CEA reclassified large hydro (>25 MW) as renewable in March 2019. "
-            "Series before and after that date are not on the same definition."
+            "Figures before and after that date are not the same definition."
         ),
     },
     {
         "id": "national_highways_km",
         "label": "National highways length",
         "unit": "km",
-        "category": "roads",
-        "bindings": [{"source": "morth_road_stats", "field": "nh_length_km", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
+        "category": "transport",
+        "source": "morth_road_stats",
         "series_break": (
             "State highways are periodically re-declared as national highways, "
             "so growth mixes new construction with reclassification."
@@ -475,45 +426,40 @@ INDICATORS = [
         "id": "pmgsy_road_km",
         "label": "PMGSY rural roads completed",
         "unit": "km",
-        "category": "roads",
-        "bindings": [{"source": "pmgsy_omms", "field": "road_km_completed", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
+        "category": "transport",
+        "source": "pmgsy_omms",
         "series_break": None,
     },
     {
         "id": "rail_electrification_pct",
         "label": "Rail route electrified",
         "unit": "%",
-        "category": "rail",
-        "bindings": [{"source": "indian_railways_ar", "field": "electrified_pct", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
+        "category": "transport",
+        "source": "indian_railways_ar",
         "series_break": None,
     },
     {
         "id": "rail_route_km",
         "label": "Rail route length",
         "unit": "km",
-        "category": "rail",
-        "bindings": [{"source": "indian_railways_ar", "field": "route_km", "scale": 1.0, "comparable": True}],
-        "coverage_end": None,
+        "category": "transport",
+        "source": "indian_railways_ar",
         "series_break": None,
     },
     {
         "id": "internet_subscribers_mn",
         "label": "Internet subscribers",
         "unit": "million",
-        "category": "digital",
-        "bindings": [{"source": "trai_subscription", "field": "internet_subscribers", "scale": 1e-6, "comparable": True}],
-        "coverage_end": None,
+        "category": "telecom",
+        "source": "trai_subscription",
         "series_break": None,
     },
     {
         "id": "broadband_subscribers_mn",
         "label": "Broadband subscribers",
         "unit": "million",
-        "category": "digital",
-        "bindings": [{"source": "trai_subscription", "field": "broadband_subscribers", "scale": 1e-6, "comparable": True}],
-        "coverage_end": None,
+        "category": "telecom",
+        "source": "trai_subscription",
         "series_break": (
             "TRAI's broadband definition moved from >=256 kbit/s to >=512 kbit/s "
             "in 2014, which lifts the level independently of any build-out."
@@ -523,9 +469,8 @@ INDICATORS = [
         "id": "rural_tap_connections_mn",
         "label": "Rural households with tap water",
         "unit": "million",
-        "category": "water",
-        "bindings": [{"source": "jjm_dashboard", "field": "tap_connections", "scale": 1e-6, "comparable": True}],
-        "coverage_end": None,
+        "category": "water_sanitation",
+        "source": "jjm_dashboard",
         "series_break": None,
     },
 ]
@@ -594,6 +539,28 @@ def parse_wb_long_csv(raw, args):
     return out
 
 
+def parse_cdiac_csv(raw, args):
+    """CDIAC layout: Year,Country,Total,... in thousand tonnes of carbon."""
+    out = {}
+    reader = csv.DictReader(io.StringIO(raw.decode("utf-8", errors="replace")))
+    for row in reader:
+        if (row.get("Country") or "").strip().upper() != "INDIA":
+            continue
+        try:
+            year = int(str(row.get("Year", "")).strip())
+        except (TypeError, ValueError):
+            continue
+        if year < BASE_YEAR:
+            continue
+        val = _f(row.get("Total"))
+        if val is not None:
+            # Left in native units (kt C). The indicator binding applies the
+            # 44/12 carbon-to-CO2 conversion, so the unit change stays visible
+            # at the point of comparison instead of being buried here.
+            out[year] = {"total_kt_c": val}
+    return out
+
+
 def parse_unavailable_html(raw, args):
     """Placeholder for sources that are landing pages, not machine-readable feeds.
 
@@ -606,6 +573,7 @@ def parse_unavailable_html(raw, args):
 PARSERS = {
     "owid_wide_csv": parse_owid_wide_csv,
     "wb_long_csv": parse_wb_long_csv,
+    "cdiac_csv": parse_cdiac_csv,
     "unavailable_html": parse_unavailable_html,
 }
 

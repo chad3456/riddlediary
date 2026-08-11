@@ -1,5 +1,16 @@
 {
   "sources": {
+    "cdiac_fossil_co2": {
+      "bytes": 969077,
+      "consecutive_failures": 0,
+      "env_reachable": true,
+      "last_attempt": "2026-08-07T11:45:10+00:00",
+      "last_changed_at": "2026-08-07T11:45:10+00:00",
+      "last_detail": "HTTP 200",
+      "last_status": "OK_CHANGED",
+      "last_success": "2026-08-07T11:45:10+00:00",
+      "sha256": "1e986299d1f7e98b226281e54fa797bf2a97597799e294a0f717e07180119caf"
+    },
     "cea_installed_capacity": {
       "consecutive_failures": 1,
       "env_reachable": false,

@@ -98,6 +98,16 @@ retrieved_at : str
 source_column : str | None
     The original column/field name in the raw file. Optional but
     strongly recommended - it is the fastest way to audit a mapping.
+source_lineage : str | None
+    The ULTIMATE upstream this figure descends from, e.g.
+    "UN WPP / World Bank" or "Global Carbon Project". Two files can
+    look like two sources while being two copies of one number: OWID's
+    population column and the World Bank population CSV agree to seven
+    people on a 1.3-billion base, which proves nothing was corrupted in
+    transit but is emphatically NOT a second opinion. The cross-source
+    agreement check uses this field to label a comparison independent
+    or not, so that agreement between siblings is never presented as
+    corroboration.
 
 Quality flags
 ~~~~~~~~~~~~~
@@ -205,6 +215,12 @@ AGGREGATE_CODES = {
     "AGG_OTHER",
 }
 
+#: Aggregates are given synthetic OWID_* codes. The explicit set above is the
+#: curated list the dashboard uses; this pattern keeps validate() from
+#: rejecting any further aggregate a later source introduces, while still
+#: refusing anything that is neither ISO3 nor visibly an aggregate.
+_AGG_RE = re.compile(r"^OWID_[A-Z0-9]{2,6}$")
+
 _ISO3_RE = re.compile(r"^[A-Z]{3}$")
 _SLUG_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _URL_RE = re.compile(r"^https?://[^\s]+\.[^\s]+", re.IGNORECASE)
@@ -227,6 +243,7 @@ FIELDS = (
     "source_url",
     "source_dataset_file",
     "source_column",
+    "source_lineage",
     "retrieved_at",
     "is_estimated",
     "definition_note",
@@ -258,8 +275,12 @@ class SchemaError(ValueError):
 
 
 def is_aggregate(country_iso3: str) -> bool:
-    """True if the code denotes a region/income-group aggregate, not a country."""
-    return country_iso3 in AGGREGATE_CODES or country_iso3.startswith("OWID_")
+    """True if the code denotes a region/income-group aggregate, not a country.
+
+    The dashboard must be able to keep World and continental reference lines on
+    a chart without them being counted as countries in "n countries covered".
+    """
+    return country_iso3 in AGGREGATE_CODES or bool(_AGG_RE.match(country_iso3))
 
 
 def basis_multiplier(per_capita_basis: str) -> Optional[float]:
@@ -286,6 +307,7 @@ def make_record(
     population: Optional[float] = None,
     population_source: Optional[str] = None,
     source_column: Optional[str] = None,
+    source_lineage: Optional[str] = None,
     is_estimated: bool = False,
     definition_note: str = "",
     break_in_series: bool = False,
@@ -313,6 +335,7 @@ def make_record(
         "source_url": source_url,
         "source_dataset_file": source_dataset_file,
         "source_column": source_column,
+        "source_lineage": source_lineage,
         "retrieved_at": retrieved_at,
         "is_estimated": bool(is_estimated),
         "definition_note": definition_note or "",
@@ -382,7 +405,7 @@ def validate(record: Dict[str, Any]) -> Dict[str, Any]:
     iso3 = record["country_iso3"]
     if not isinstance(iso3, str):
         raise SchemaError(f"country_iso3 must be a string ({iid})")
-    if not (_ISO3_RE.match(iso3) or iso3 in AGGREGATE_CODES):
+    if not (_ISO3_RE.match(iso3) or iso3 in AGGREGATE_CODES or _AGG_RE.match(iso3)):
         raise SchemaError(
             f"country_iso3 {iso3!r} is neither ISO3 nor a declared aggregate code ({iid})"
         )
@@ -457,6 +480,10 @@ def validate(record: Dict[str, Any]) -> Dict[str, Any]:
     sc = record.get("source_column")
     if sc is not None and not isinstance(sc, str):
         raise SchemaError(f"source_column must be a string or None ({iid})")
+
+    sl = record.get("source_lineage")
+    if sl is not None and not isinstance(sl, str):
+        raise SchemaError(f"source_lineage must be a string or None ({iid})")
 
     ps = record.get("population_source")
     if ps is not None and not isinstance(ps, str):

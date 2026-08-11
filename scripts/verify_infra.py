@@ -389,6 +389,7 @@ def check_cross_source(
                         "source_dataset_file": r["source_dataset_file"],
                         "source_url": r["source_url"],
                         "source_column": r.get("source_column"),
+                        "source_lineage": r.get("source_lineage"),
                         "value": float(r["value"]),
                         "relative_to_median": None if d is None else round(d, 6),
                     }
@@ -396,13 +397,28 @@ def check_cross_source(
                 if d is not None:
                     worst = max(worst, abs(d))
             spread = (max(vals) - min(vals))
+
+            # Two files that descend from one upstream are siblings, not
+            # witnesses. Agreement between them proves nothing was corrupted in
+            # transit; it is not corroboration, and disagreement between them
+            # is a transit/vintage bug rather than a genuine dispute.
+            lineages = {r.get("source_lineage") for r in shape_rows}
+            independent = len({l for l in lineages if l}) > 1
+
             if worst > threshold:
                 findings.append(
                     _finding(
                         "cross_source",
                         "warn",
                         f"sources disagree by up to {worst * 100:.2f}% "
-                        f"(median {med:g}, spread {spread:g} {unit})",
+                        f"(median {med:g}, spread {spread:g} {unit})"
+                        + (
+                            ""
+                            if independent
+                            else " - NOTE: these sources share one upstream "
+                            "lineage, so this is a transit/vintage discrepancy, "
+                            "not two independent estimates disagreeing"
+                        ),
                         indicator_id=key[0],
                         country_iso3=key[1],
                         year=key[2],
@@ -410,6 +426,8 @@ def check_cross_source(
                         per_capita_basis=basis,
                         median=med,
                         max_relative_divergence=round(worst, 6),
+                        independent_sources=independent,
+                        lineages=sorted(l for l in lineages if l),
                         sources=divergences,
                     )
                 )
@@ -689,9 +707,13 @@ def check_scope(records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     must never let those two be confused.
     """
     groups: Dict[Any, set] = defaultdict(set)
+    lineages: Dict[Any, set] = defaultdict(set)
     for r in records:
         groups[comparison_key(r)].add((r["source_publisher"], r["source_dataset_file"]))
+        if r.get("source_lineage"):
+            lineages[comparison_key(r)].add(r["source_lineage"])
     multi = {k: v for k, v in groups.items() if len(v) > 1}
+    truly_independent = sum(1 for k in multi if len(lineages.get(k, ())) > 1)
 
     series: Dict[Any, int] = Counter(series_key(r) for r in records)
     comparable_pairs = sum(max(0, n - 1) for n in series.values())
@@ -712,9 +734,12 @@ def check_scope(records: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         "cross_source": {
             "indicator_country_year_cells": len(groups),
             "cells_covered_by_2plus_sources": len(multi),
+            "cells_covered_by_2plus_INDEPENDENT_lineages": truly_independent,
             "note": (
                 "Zero cross_source findings is only meaningful if "
-                "cells_covered_by_2plus_sources > 0."
+                "cells_covered_by_2plus_sources > 0. And only "
+                "cells_covered_by_2plus_INDEPENDENT_lineages represents genuine "
+                "corroboration - the rest are sibling copies of one upstream."
             ),
         },
         "yoy_jump": {
@@ -906,7 +931,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     with open(a.records) as fh:
         payload = json.load(fh)
-    records = payload["records"] if isinstance(payload, dict) else payload
+    if isinstance(payload, list):
+        records = payload
+    else:
+        import infra_store
+
+        records = infra_store.decode(payload)
 
     report = run_all(
         records,

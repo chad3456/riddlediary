@@ -1,0 +1,36 @@
+{
+  "bytes_full": 969077,
+  "cadence_days": 365,
+  "fetched_at": "2026-08-07T11:45:10+00:00",
+  "landing": "https://github.com/datasets/co2-fossil-by-nation",
+  "lineage": "cdiac",
+  "provenance_tier": "community_mirror",
+  "publisher": "CDIAC / Oak Ridge, republished by the `datasets` project",
+  "rows": {
+    "2014": {
+      "total_kt_c": 595269.0
+    },
+    "2015": {
+      "total_kt_c": 622224.0
+    },
+    "2016": {
+      "total_kt_c": 637380.0
+    },
+    "2017": {
+      "total_kt_c": 664474.0
+    },
+    "2018": {
+      "total_kt_c": 695572.0
+    },
+    "2019": {
+      "total_kt_c": 720048.0
+    },
+    "2020": {
+      "total_kt_c": 650069.0
+    }
+  },
+  "sha256_full": "1e986299d1f7e98b226281e54fa797bf2a97597799e294a0f717e07180119caf",
+  "source_id": "cdiac_fossil_co2",
+  "title": "CDIAC fossil-fuel CO2 emissions by nation (community mirror)",
+  "url": "https://raw.githubusercontent.com/datasets/co2-fossil-by-nation/main/data/fossil-fuel-co2-emissions-by-nation.csv"
+}

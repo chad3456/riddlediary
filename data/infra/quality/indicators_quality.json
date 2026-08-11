@@ -1,0 +1,2171 @@
+{
+  "base_year": 2014,
+  "blocked_count": 9,
+  "canonical_source": "data/infra/clean/indicators.json: 25 India indicators (read via scripts/infra_store.load())",
+  "caps": {
+    "blocked": 60,
+    "no_data": 25,
+    "uncorroborated": 80
+  },
+  "generated_at": "2026-08-07T11:47:50+00:00",
+  "indicator_count": 34,
+  "indicators": {
+    "broadband_subscribers_mn": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "telecom",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 4
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 30,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "trai_subscription",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "broadband_subscribers_mn",
+      "in_canonical_dataset": false,
+      "label": "Broadband subscribers",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [
+        "known break in series: TRAI's broadband definition moved from >=256 kbit/s to >=512 kbit/s in 2014, which lifts the level independently of any build-out."
+      ],
+      "previous_score": null,
+      "primary_lineage": "trai",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Telecom Regulatory Authority of India"
+      ],
+      "raw_score": 36.2,
+      "score": 25,
+      "unit": "million",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "cement_co2_mt": {
+      "caps_applied": [],
+      "category": "emissions",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "Proxy for construction/infrastructure activity."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "cement_co2_mt",
+      "in_canonical_dataset": true,
+      "label": "CO2 from cement production",
+      "latest_data_year": 2024,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 57.2,
+      "score": 57.2,
+      "unit": "million tonnes",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "co2_emissions_mt": {
+      "caps_applied": [],
+      "category": "emissions",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 14,
+        "divergence": 13,
+        "provenance": 17,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 1,
+      "corroborator_bindings": [
+        {
+          "field": "total_kt_c",
+          "lineage": "cdiac",
+          "note": "CDIAC, converted from kt carbon; covers 2014-2020 only",
+          "points": 7,
+          "scale": 0.0036666666666666666,
+          "source_id": "cdiac_fossil_co2"
+        }
+      ],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "Production-based, fossil fuels and industry."
+      ],
+      "delta": null,
+      "divergence_max": 0.022011,
+      "divergence_median": 0.015979,
+      "divergence_overlap_years": 7,
+      "freshness": {
+        "cadence_days": 365,
+        "env_reachable": true,
+        "expected_next_update": "2027-08-07T11:45:10+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:45:10+00:00",
+        "reason": null,
+        "source_id": "cdiac_fossil_co2",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "co2_emissions_mt",
+      "in_canonical_dataset": true,
+      "label": "CO2 emissions",
+      "latest_data_year": 2024,
+      "lineages": [
+        "cdiac",
+        "owid-energy"
+      ],
+      "notes": [],
+      "previous_score": null,
+      "primary_lineage": "cdiac",
+      "provenance_tier": "community_mirror",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 74.8,
+      "score": 74.8,
+      "unit": "million tonnes",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "co2_per_capita_t": {
+      "caps_applied": [],
+      "category": "emissions",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "Production-based."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "co2_per_capita_t",
+      "in_canonical_dataset": true,
+      "label": "CO2 emissions per person",
+      "latest_data_year": 2024,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 57.2,
+      "score": 57.2,
+      "unit": "tonnes",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "coal_co2_mt": {
+      "caps_applied": [],
+      "category": "emissions",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 1,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "coal_co2_mt",
+      "in_canonical_dataset": true,
+      "label": "CO2 from coal",
+      "latest_data_year": 2024,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 57.2,
+      "score": 57.2,
+      "unit": "million tonnes",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "coal_electricity_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "coal_electricity_twh",
+      "in_canonical_dataset": true,
+      "label": "Coal electricity generation",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "electricity_demand_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "electricity_demand_twh",
+      "in_canonical_dataset": true,
+      "label": "Electricity demand",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "electricity_generation_gwh_per_million_people": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [
+        "Derived by this pipeline: electricity_generation (TWh) x 1000, divided by the population denominator stored on this record."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "electricity_generation_gwh_per_million_people",
+      "in_canonical_dataset": true,
+      "label": "Electricity generation per million people",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "GWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "electricity_generation_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "electricity_generation_twh",
+      "in_canonical_dataset": true,
+      "label": "Electricity generation",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "electricity_per_capita_kwh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "electricity_per_capita_kwh",
+      "in_canonical_dataset": true,
+      "label": "Electricity generation per person",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "kWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "energy_per_capita_kwh": {
+      "caps_applied": [],
+      "category": "energy",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "Also published in owid-energy-data.csv; both retained for cross-check."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "energy_per_capita_kwh",
+      "in_canonical_dataset": true,
+      "label": "Primary energy use per person",
+      "latest_data_year": 2024,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 57.2,
+      "score": 57.2,
+      "unit": "kWh",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "fossil_share_elec_pct": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "fossil_share_elec_pct",
+      "in_canonical_dataset": true,
+      "label": "Fossil share of electricity",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "percent",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "hydro_electricity_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "hydro_electricity_twh",
+      "in_canonical_dataset": true,
+      "label": "Hydro electricity generation",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "installed_capacity_gw": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "electricity",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 30,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "cea_installed_capacity",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "installed_capacity_gw",
+      "in_canonical_dataset": false,
+      "label": "Installed generation capacity",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [],
+      "previous_score": null,
+      "primary_lineage": "cea",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Central Electricity Authority, Government of India"
+      ],
+      "raw_score": 43.8,
+      "score": 25,
+      "unit": "GW",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "internet_subscribers_mn": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "telecom",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 30,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "trai_subscription",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "internet_subscribers_mn",
+      "in_canonical_dataset": false,
+      "label": "Internet subscribers",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [],
+      "previous_score": null,
+      "primary_lineage": "trai",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Telecom Regulatory Authority of India"
+      ],
+      "raw_score": 43.8,
+      "score": 25,
+      "unit": "million",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "low_carbon_share_elec_pct": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [
+        "Renewables plus nuclear."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "low_carbon_share_elec_pct",
+      "in_canonical_dataset": true,
+      "label": "Low-carbon share of electricity",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "percent",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "methane_mt_co2e": {
+      "caps_applied": [],
+      "category": "emissions",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "CO2-equivalent, 100-year GWP."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "methane_mt_co2e",
+      "in_canonical_dataset": true,
+      "label": "Methane emissions",
+      "latest_data_year": 2024,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 57.2,
+      "score": 57.2,
+      "unit": "million tonnes",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "national_highways_km": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "transport",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 4
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 365,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "morth_road_stats",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "national_highways_km",
+      "in_canonical_dataset": false,
+      "label": "National highways length",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [
+        "known break in series: State highways are periodically re-declared as national highways, so growth mixes new construction with reclassification."
+      ],
+      "previous_score": null,
+      "primary_lineage": "morth",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Ministry of Road Transport & Highways"
+      ],
+      "raw_score": 36.2,
+      "score": 25,
+      "unit": "km",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "nuclear_electricity_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "nuclear_electricity_twh",
+      "in_canonical_dataset": true,
+      "label": "Nuclear electricity generation",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "pmgsy_road_km": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "transport",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 7,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "pmgsy_omms",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "pmgsy_road_km",
+      "in_canonical_dataset": false,
+      "label": "PMGSY rural roads completed",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [],
+      "previous_score": null,
+      "primary_lineage": "pmgsy",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Ministry of Rural Development"
+      ],
+      "raw_score": 43.8,
+      "score": 25,
+      "unit": "km",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "population_persons": {
+      "caps_applied": [],
+      "category": "demographics",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 18,
+        "divergence": 20,
+        "provenance": 7,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 2,
+      "corroborator_bindings": [
+        {
+          "field": "population",
+          "lineage": "worldbank-wdi",
+          "note": "World Bank estimate vs OWID's UN WPP/HYDE blend",
+          "points": 11,
+          "scale": 1.0,
+          "source_id": "wb_population"
+        }
+      ],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "Per-capita denominator. Shares the UN WPP / World Bank lineage with the other population file, so the two corroborate transit integrity, not each other's accuracy."
+      ],
+      "delta": null,
+      "divergence_max": 0.0,
+      "divergence_median": 0.0,
+      "divergence_overlap_years": 11,
+      "freshness": {
+        "cadence_days": null,
+        "env_reachable": null,
+        "expected_next_update": null,
+        "last_detail": null,
+        "last_status": null,
+        "last_updated": null,
+        "reason": "no registered source for this indicator",
+        "source_id": null,
+        "staleness_days": null,
+        "state": "UNKNOWN"
+      },
+      "id": "population_persons",
+      "in_canonical_dataset": true,
+      "label": "Population",
+      "latest_data_year": 2024,
+      "lineages": [
+        "unregistered:Our World in Data",
+        "unregistered:World Bank (via datasets/population)",
+        "worldbank-wdi"
+      ],
+      "notes": [
+        "primary source is not in the refresh registry; provenance scored at the lowest tier until it is registered"
+      ],
+      "previous_score": null,
+      "primary_lineage": "unregistered:Our World in Data",
+      "provenance_tier": "media",
+      "publishers": [
+        "Our World in Data",
+        "World Bank (via datasets/population)"
+      ],
+      "raw_score": 75.8,
+      "score": 75.8,
+      "unit": "count of people",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "primary_energy_consumption_twh": {
+      "caps_applied": [],
+      "category": "energy",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "Also published in owid-energy-data.csv; both retained for cross-check.",
+        "Substitution method; comparable across fuels."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "primary_energy_consumption_twh",
+      "in_canonical_dataset": true,
+      "label": "Primary energy consumption",
+      "latest_data_year": 2024,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 57.2,
+      "score": 57.2,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "rail_electrification_pct": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "transport",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 365,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "indian_railways_ar",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "rail_electrification_pct",
+      "in_canonical_dataset": false,
+      "label": "Rail route electrified",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [],
+      "previous_score": null,
+      "primary_lineage": "indian-railways",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Ministry of Railways"
+      ],
+      "raw_score": 43.8,
+      "score": 25,
+      "unit": "%",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "rail_route_km": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "transport",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 365,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "indian_railways_ar",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "rail_route_km",
+      "in_canonical_dataset": false,
+      "label": "Rail route length",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [],
+      "previous_score": null,
+      "primary_lineage": "indian-railways",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Ministry of Railways"
+      ],
+      "raw_score": 43.8,
+      "score": 25,
+      "unit": "km",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "renewable_capacity_gw": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "electricity",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 4
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 30,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "cea_installed_capacity",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "renewable_capacity_gw",
+      "in_canonical_dataset": false,
+      "label": "Renewable installed capacity",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [
+        "known break in series: CEA reclassified large hydro (>25 MW) as renewable in March 2019. Figures before and after that date are not the same definition."
+      ],
+      "previous_score": null,
+      "primary_lineage": "cea",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Central Electricity Authority, Government of India"
+      ],
+      "raw_score": 36.2,
+      "score": 25,
+      "unit": "GW",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "renewables_electricity_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "renewables_electricity_twh",
+      "in_canonical_dataset": true,
+      "label": "Renewable electricity generation",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "renewables_share_elec_pct": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "renewables_share_elec_pct",
+      "in_canonical_dataset": true,
+      "label": "Renewables share of electricity",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "percent",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "rural_tap_connections_mn": {
+      "caps_applied": [
+        "no data held for this indicator: capped at 25"
+      ],
+      "category": "water_sanitation",
+      "completeness_share": 0.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 0.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 25,
+        "recency": 0,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": null,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 1,
+        "env_reachable": false,
+        "expected_next_update": null,
+        "last_detail": "egress proxy refused CONNECT (Tunnel connection failed: 403 Forbidden)",
+        "last_status": "BLOCKED",
+        "last_updated": null,
+        "reason": "egress-blocked from this environment; upstream state unknown",
+        "source_id": "jjm_dashboard",
+        "staleness_days": null,
+        "state": "BLOCKED"
+      },
+      "id": "rural_tap_connections_mn",
+      "in_canonical_dataset": false,
+      "label": "Rural households with tap water",
+      "latest_data_year": null,
+      "lineages": [],
+      "notes": [],
+      "previous_score": null,
+      "primary_lineage": "jjm",
+      "provenance_tier": "official_direct",
+      "publishers": [
+        "Department of Drinking Water & Sanitation"
+      ],
+      "raw_score": 43.8,
+      "score": 25,
+      "unit": "million",
+      "years_expected": 12,
+      "years_present": 0
+    },
+    "solar_elec_per_capita_kwh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "solar_elec_per_capita_kwh",
+      "in_canonical_dataset": true,
+      "label": "Solar electricity per person",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "kWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "solar_electricity_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "solar_electricity_twh",
+      "in_canonical_dataset": true,
+      "label": "Solar electricity generation",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "solar_share_elec_pct": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "solar_share_elec_pct",
+      "in_canonical_dataset": true,
+      "label": "Solar share of electricity",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "percent",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "total_ghg_mt_co2e": {
+      "caps_applied": [],
+      "category": "emissions",
+      "completeness_share": 0.917,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 13.75,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 7,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 1,
+      "definition_notes": [
+        "CO2-equivalent including land use."
+      ],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "total_ghg_mt_co2e",
+      "in_canonical_dataset": true,
+      "label": "Total greenhouse gas emissions",
+      "latest_data_year": 2024,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 57.2,
+      "score": 57.2,
+      "unit": "million tonnes",
+      "years_expected": 12,
+      "years_present": 11
+    },
+    "wind_elec_per_capita_kwh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "wind_elec_per_capita_kwh",
+      "in_canonical_dataset": true,
+      "label": "Wind electricity per person",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "kWh",
+      "years_expected": 12,
+      "years_present": 12
+    },
+    "wind_electricity_twh": {
+      "caps_applied": [],
+      "category": "electricity",
+      "completeness_share": 1.0,
+      "component_weights": {
+        "completeness": 15,
+        "corroboration": 20,
+        "divergence": 20,
+        "provenance": 25,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "components": {
+        "completeness": 15.0,
+        "corroboration": 0,
+        "divergence": null,
+        "provenance": 15,
+        "recency": 10,
+        "series_integrity": 10
+      },
+      "corroborating_lineages": 0,
+      "corroborator_bindings": [],
+      "data_lag_years": 0,
+      "definition_notes": [],
+      "delta": null,
+      "divergence_max": null,
+      "divergence_median": null,
+      "divergence_overlap_years": 0,
+      "freshness": {
+        "cadence_days": 180,
+        "env_reachable": true,
+        "expected_next_update": "2027-02-03T11:40:01+00:00",
+        "last_detail": "HTTP 200",
+        "last_status": "OK_CHANGED",
+        "last_updated": "2026-08-07T11:40:01+00:00",
+        "reason": null,
+        "source_id": "owid_energy",
+        "staleness_days": 0.0,
+        "state": "FRESH"
+      },
+      "id": "wind_electricity_twh",
+      "in_canonical_dataset": true,
+      "label": "Wind electricity generation",
+      "latest_data_year": 2025,
+      "lineages": [
+        "owid-energy"
+      ],
+      "notes": [
+        "single provenance lineage: no cross-source check is possible"
+      ],
+      "previous_score": null,
+      "primary_lineage": "owid-energy",
+      "provenance_tier": "aggregator",
+      "publishers": [
+        "Our World in Data"
+      ],
+      "raw_score": 62.5,
+      "score": 62.5,
+      "unit": "TWh",
+      "years_expected": 12,
+      "years_present": 12
+    }
+  },
+  "mean_score": 52.2,
+  "model_version": 1,
+  "partner_schema": "scripts/infra_schema.py v1.0.0 imported",
+  "provenance_points": {
+    "aggregator": 15,
+    "community_mirror": 17,
+    "media": 7,
+    "official_direct": 25,
+    "official_mirror": 21
+  },
+  "run_id": "20260807T114750Z",
+  "uncorroborated_count": 32,
+  "weights": {
+    "completeness": 15,
+    "corroboration": 20,
+    "divergence": 20,
+    "provenance": 25,
+    "recency": 10,
+    "series_integrity": 10
+  }
+}
