@@ -63,3 +63,10 @@ Riddle's persona lives in `RIDDLE_SYSTEM` in `server.js`: eloquent, cold, faintl
 
 - The reply font is **Dancing Script** (Google Fonts), the same flowing-hand choice as the original [reMarkable `riddle` project](https://github.com/MaximeRivest/riddle), with a cursive fallback if offline.
 - This is an MVP. There is no account system and nothing to persist — that is by design.
+
+
+---
+
+## Also in this repo: SENTINEL OSINT board
+
+[`sentinel/`](sentinel/) is a separate, self-contained real-time OSINT fusion dashboard. It covers chokepoints, military aviation, shipping, conflict reporting, hazards, cyber and markets. See [sentinel/README.md](sentinel/README.md).

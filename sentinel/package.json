@@ -1,0 +1,14 @@
+{
+  "name": "sentinel-osint",
+  "version": "1.0.0",
+  "description": "Open-source intelligence fusion board: chokepoints, military aviation, shipping, conflict news, hazards, cyber and markets in real time.",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node server.js --demo",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=22" },
+  "license": "MIT"
+}

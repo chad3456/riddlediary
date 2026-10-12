@@ -1,0 +1,572 @@
+/* SENTINEL client — map, panels and live updates over SSE. No build step. */
+(() => {
+  'use strict';
+
+  // ---------------- helpers ----------------
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const fmt = (v, d = 1) => {
+    if (v === null || v === undefined || Number.isNaN(v)) return '—';
+    if (typeof v !== 'number') return esc(v);
+    const a = Math.abs(v);
+    if (a >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+    if (a >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+    if (a >= 10000) return Math.round(v).toLocaleString('en-US');
+    if (Number.isInteger(v)) return String(v);
+    return v.toFixed(a < 1 ? Math.max(d, 3) : d);
+  };
+  const pct = (v) => (v === null || v === undefined ? '—' : `<span class="${v > 0 ? 'up' : v < 0 ? 'down' : ''}">${v > 0 ? '+' : ''}${v.toFixed(2)}%</span>`);
+  const ago = (t) => {
+    if (!t) return 'never';
+    const s = Math.round((Date.now() - t) / 1000);
+    return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)}m ago` : s < 86400 ? `${Math.round(s / 3600)}h ago` : `${Math.round(s / 86400)}d ago`;
+  };
+  const pill = (level) => `<span class="lvl s-${level?.status || 'null'}">${esc(level?.label || 'NO DATA')}</span>`;
+  const SEV = { 4: { label: 'CRITICAL', status: 'critical' }, 3: { label: 'HIGH', status: 'serious' }, 2: { label: 'ELEVATED', status: 'warning' }, 1: { label: 'NOTE', status: 'guarded' } };
+  const STATUS_LABEL = { good: 'NORMAL', guarded: 'GUARDED', warning: 'WATCH', serious: 'ALERT', critical: 'CRITICAL' };
+
+  function spark(values, { color = 'var(--accent)', h = 40, labels = null, unit = '', area = true } = {}) {
+    const v = (values || []).map((x) => (x && typeof x === 'object' ? x.v : x));
+    const pts = v.map((y, i) => [i, y]).filter(([, y]) => y !== null && y !== undefined);
+    if (pts.length < 2) return '<div class="muted mono" style="font-size:11px">collecting history…</div>';
+    const ys = pts.map((p) => p[1]);
+    let lo = Math.min(...ys); let hi = Math.max(...ys);
+    if (hi === lo) { hi += 1; lo -= 1; }
+    const W = 300; const n = v.length - 1;
+    const X = (i) => (i / n) * W; const Y = (y) => h - 3 - ((y - lo) / (hi - lo)) * (h - 6);
+    const d = pts.map(([i, y], k) => `${k ? 'L' : 'M'}${X(i).toFixed(1)},${Y(y).toFixed(1)}`).join('');
+    const fill = area ? `<path d="${d}L${X(pts[pts.length - 1][0])},${h}L${X(pts[0][0])},${h}Z" fill="${color}" opacity=".12"/>` : '';
+    const [li, ly] = pts[pts.length - 1];
+    const lab = labels || (values[0] && typeof values[0] === 'object' ? values.map((p) => new Date(p.t).toISOString().slice(11, 16) + 'Z') : null);
+    return `<div class="spark-wrap" data-v='${JSON.stringify(v)}' data-l='${esc(JSON.stringify(lab || []))}' data-u="${esc(unit)}">
+      <svg class="spark" viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" style="height:${h}px">${fill}
+      <path d="${d}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <circle cx="${X(li)}" cy="${Y(ly)}" r="3" fill="${color}" vector-effect="non-scaling-stroke"/>
+      <line class="xh" x1="0" x2="0" y1="0" y2="${h}" stroke="var(--text-muted)" stroke-width="1" vector-effect="non-scaling-stroke" visibility="hidden"/></svg></div>`;
+  }
+  // One delegated hover layer for every sparkline on the page.
+  document.addEventListener('mousemove', (e) => {
+    const w = e.target.closest?.('.spark-wrap');
+    document.querySelectorAll('.spark-tip').forEach((t) => { if (!w || t.parentNode !== w) t.remove(); });
+    document.querySelectorAll('.spark .xh').forEach((l) => { if (!w || !w.contains(l)) l.setAttribute('visibility', 'hidden'); });
+    if (!w) return;
+    const v = JSON.parse(w.dataset.v); const l = JSON.parse(w.dataset.l || '[]');
+    const r = w.getBoundingClientRect();
+    const i = Math.max(0, Math.min(v.length - 1, Math.round(((e.clientX - r.left) / r.width) * (v.length - 1))));
+    let tip = w.querySelector('.spark-tip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'spark-tip'; w.appendChild(tip); }
+    tip.style.left = `${(i / (v.length - 1)) * 100}%`;
+    tip.textContent = `${l[i] ? l[i] + ' · ' : ''}${v[i] === null ? '—' : fmt(v[i])}${w.dataset.u || ''}`;
+    const xh = w.querySelector('.xh');
+    const x = (i / (v.length - 1)) * 300;
+    xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
+  });
+
+  // ---------------- state ----------------
+  const S = {
+    summary: null, params: null, air: [], ships: [], hazards: { quakes: [], eonet: [], gdacs: [], fires: [] },
+    versions: {}, tab: 'brief', drawer: null, kindFilter: 'All', paramQ: '', paramType: 'all', paramFlagged: false,
+    vis: { choke: true, hot: true, milair: true, civair: true, ships: true, fires: true, quakes: true, eonet: true, gdacs: true },
+  };
+  try { Object.assign(S.vis, JSON.parse(localStorage.getItem('sentinel.vis') || '{}')); } catch { /* storage unavailable */ }
+  try { S.tab = localStorage.getItem('sentinel.tab') || 'brief'; } catch { /* storage unavailable */ }
+
+  // ---------------- map ----------------
+  const map = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 12, zoomSnap: 0.5, attributionControl: true }).setView([24, 45], 3);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 12,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>' }).addTo(map);
+  map.createPane('labels'); map.getPane('labels').style.zIndex = 390; map.getPane('labels').style.pointerEvents = 'none';
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', pane: 'labels', maxZoom: 12, opacity: 0.55 }).addTo(map);
+
+  // Canvas layer for thousands of moving glyphs (aircraft, ships, fires) with hit-testing.
+  const GlyphLayer = L.Layer.extend({
+    initialize(draw, radius = 8) { this._draw = draw; this._items = []; this._r = radius; },
+    onAdd(m) {
+      this._map = m;
+      this._c = L.DomUtil.create('canvas', 'leaflet-zoom-hide');
+      this._c.style.pointerEvents = 'none';
+      m.getPanes().overlayPane.appendChild(this._c);
+      m.on('move zoomend resize viewreset', this._schedule, this);
+      this._reset();
+    },
+    onRemove(m) { this._c.remove(); m.off('move zoomend resize viewreset', this._schedule, this); },
+    setData(items) { this._items = items; this._schedule(); },
+    _schedule() { if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = null; this._reset(); }); },
+    _reset() {
+      const m = this._map; if (!m) return;
+      const size = m.getSize(); const dpr = window.devicePixelRatio || 1;
+      const c = this._c;
+      L.DomUtil.setPosition(c, m.containerPointToLayerPoint([0, 0]));
+      c.width = size.x * dpr; c.height = size.y * dpr; c.style.width = `${size.x}px`; c.style.height = `${size.y}px`;
+      const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const b = m.getBounds().pad(0.05); const z = m.getZoom();
+      this._screen = [];
+      for (const it of this._items) {
+        if (!b.contains([it.lat, it.lon]) && !b.contains([it.lat, it.lon + 360]) && !b.contains([it.lat, it.lon - 360])) continue;
+        const p = m.latLngToContainerPoint([it.lat, it.lon]);
+        this._draw(ctx, p, it, z);
+        this._screen.push([p.x, p.y, it]);
+      }
+    },
+    hit(pt) {
+      let best = null; let bd = this._r * this._r;
+      for (const [x, y, it] of this._screen || []) {
+        const d = (x - pt.x) ** 2 + (y - pt.y) ** 2;
+        if (d < bd) { bd = d; best = it; }
+      }
+      return best;
+    },
+  });
+
+  const COLORS = {};
+  const loadColors = () => Object.assign(COLORS, {
+    airCivil: css('--air-civil'), airMil: css('--air-mil'), cargo: css('--ship-cargo'), tanker: css('--ship-tanker'),
+    shipMil: css('--ship-mil'), shipOther: css('--ship-other'), fire: css('--fire'), quake: css('--quake'),
+    good: css('--good'), guarded: css('--guarded'), warning: css('--warning'), serious: css('--serious'), critical: css('--critical'), muted: css('--text-muted'),
+  });
+  loadColors();
+
+  function shipClass(t) {
+    if (t === null || t === undefined) return 'unknown';
+    if (t >= 80 && t <= 89) return 'tanker';
+    if (t >= 70 && t <= 79) return 'cargo';
+    if (t >= 60 && t <= 69) return 'passenger';
+    if (t === 35 || t === 55) return 'military';
+    if (t === 30) return 'fishing';
+    return 'other';
+  }
+  const shipColor = (c) => ({ tanker: COLORS.tanker, cargo: COLORS.cargo, military: COLORS.shipMil }[c] || COLORS.shipOther);
+
+  function drawPlane(ctx, p, a, z) {
+    const s = a.mil ? (z >= 6 ? 7 : 5.5) : (z >= 6 ? 5 : 3.2);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(((a.hdg || 0) * Math.PI) / 180);
+    ctx.beginPath(); ctx.moveTo(0, -s * 1.4); ctx.lineTo(s, s); ctx.lineTo(0, s * 0.45); ctx.lineTo(-s, s); ctx.closePath();
+    ctx.fillStyle = a.mil ? COLORS.airMil : COLORS.airCivil; ctx.globalAlpha = a.mil ? 1 : 0.75; ctx.fill();
+    if (a.sq === '7700' || a.sq === '7500' || a.sq === '7600') { ctx.globalAlpha = 1; ctx.strokeStyle = COLORS.critical; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, s * 2.2, 0, 7); ctx.stroke(); }
+    ctx.restore();
+    if (a.mil && z >= 6 && a.cs) { ctx.font = '10px IBM Plex Mono, monospace'; ctx.fillStyle = COLORS.airMil; ctx.fillText(a.cs, p.x + 8, p.y - 6); }
+  }
+  function drawShip(ctx, p, s, z) {
+    const c = shipColor(shipClass(s.type)); const r = z >= 7 ? 5 : 3.5;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.fillStyle = c; ctx.strokeStyle = c;
+    if ((s.sog ?? 0) >= 1 && s.cog !== null && s.cog !== undefined) {
+      ctx.rotate((s.cog * Math.PI) / 180);
+      ctx.beginPath(); ctx.moveTo(0, -r * 1.6); ctx.lineTo(r * 0.8, r); ctx.lineTo(-r * 0.8, r); ctx.closePath(); ctx.globalAlpha = 0.9; ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, 7); ctx.globalAlpha = 0.9; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawFire(ctx, p, f) {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2 + Math.min(4, (f.frp || 0) / 15), 0, 7);
+    ctx.fillStyle = COLORS.fire; ctx.globalAlpha = 0.65; ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  const L_ = {
+    civair: new GlyphLayer(drawPlane, 7), milair: new GlyphLayer(drawPlane, 9), ships: new GlyphLayer(drawShip, 7), fires: new GlyphLayer(drawFire, 5),
+    choke: L.layerGroup(), hot: L.layerGroup(), quakes: L.layerGroup(), eonet: L.layerGroup(), gdacs: L.layerGroup(), focus: L.layerGroup().addTo(map),
+  };
+  const LAYER_META = [
+    ['choke', 'Chokepoints', 'var(--accent)'], ['hot', 'Conflict theatres', 'var(--serious)'], ['milair', 'Military aircraft', 'var(--air-mil)'],
+    ['civair', 'Air traffic (chokepoints)', 'var(--air-civil)'], ['ships', 'Vessels (AIS)', 'var(--ship-cargo)'], ['fires', 'Thermal anomalies', 'var(--fire)'],
+    ['quakes', 'Earthquakes', 'var(--quake)'], ['eonet', 'Natural events', '#d9dee3'], ['gdacs', 'GDACS alerts', 'var(--warning)'],
+  ];
+  const applyVis = () => {
+    for (const [k] of LAYER_META) { if (S.vis[k]) L_[k].addTo(map); else map.removeLayer(L_[k]); }
+    try { localStorage.setItem('sentinel.vis', JSON.stringify(S.vis)); } catch { /* ignore */ }
+  };
+  applyVis();
+
+  // Hover + click on canvas glyphs
+  const hover = $('#hoverCard');
+  const glyphHit = (pt) => {
+    for (const k of ['milair', 'ships', 'civair', 'fires']) {
+      if (!S.vis[k]) continue;
+      const it = L_[k].hit(pt); if (it) return [k, it];
+    }
+    return null;
+  };
+  const kv = (rows) => `<div class="kv">${rows.filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join('')}</div>`;
+  const NAV = { 0: 'Under way (engine)', 1: 'At anchor', 2: 'Not under command', 3: 'Restricted manoeuvrability', 5: 'Moored', 7: 'Fishing', 8: 'Under way (sail)' };
+  function glyphCard([k, it]) {
+    if (k === 'milair' || k === 'civair') return `<div class="h" style="color:${it.mil ? COLORS.airMil : COLORS.airCivil}">${esc(it.cs || it.id)} ${it.mil ? '· MIL' : ''}</div>`
+      + kv([['Type', it.type], ['Reg', it.reg], ['Hex', it.id], ['Altitude', it.alt === 0 ? 'ground' : it.alt ? `${fmt(it.alt)} ft` : null], ['Speed', it.spd ? `${Math.round(it.spd)} kt` : null], ['Heading', it.hdg !== null ? `${Math.round(it.hdg)}°` : null], ['Squawk', it.sq], ['Source', it.src]]);
+    if (k === 'ships') return `<div class="h" style="color:${shipColor(shipClass(it.type))}">${esc(it.name || `MMSI ${it.id}`)}</div>`
+      + kv([['Class', shipClass(it.type)], ['MMSI', it.id], ['Speed', it.sog !== null ? `${fmt(it.sog)} kn` : null], ['Course', it.cog !== null ? `${Math.round(it.cog)}°` : null], ['Status', NAV[it.nav]], ['Destination', it.dest], ['Source', it.src]]);
+    return `<div class="h" style="color:${COLORS.fire}">Thermal anomaly</div>` + kv([['FRP', `${fmt(it.frp)} MW`], ['Detected', `${it.date} ${it.time}Z`], ['Sensor', 'VIIRS S-NPP']]);
+  }
+  map.on('mousemove', (e) => {
+    const h = glyphHit(e.containerPoint);
+    if (!h) { hover.hidden = true; map.getContainer().style.cursor = ''; return; }
+    hover.innerHTML = glyphCard(h); hover.hidden = false; map.getContainer().style.cursor = 'pointer';
+    const W = map.getSize().x; const x = e.containerPoint.x;
+    hover.style.left = `${x > W - 300 ? x - 290 : x + 14}px`; hover.style.top = `${e.containerPoint.y + 14}px`;
+  });
+  map.on('mouseout', () => { hover.hidden = true; });
+  map.on('click', (e) => {
+    const h = glyphHit(e.containerPoint);
+    if (h) L.popup({ className: 'glyph-pop' }).setLatLng(e.latlng).setContent(glyphCard(h) + extLink(h)).openOn(map);
+  });
+  const extLink = ([k, it]) => (k === 'milair' || k === 'civair' ? `<div style="margin-top:6px"><a target="_blank" rel="noopener" href="https://globe.adsb.lol/?icao=${encodeURIComponent(it.id)}">Track on adsb.lol ↗</a></div>`
+    : k === 'ships' ? `<div style="margin-top:6px"><a target="_blank" rel="noopener" href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:${encodeURIComponent(it.id)}">Vessel record ↗</a></div>` : '');
+
+  // ---------------- rendering: map entities ----------------
+  const statusColor = (st) => COLORS[st] || COLORS.muted;
+
+  function renderEntitiesOnMap() {
+    const sm = S.summary; if (!sm) return;
+    L_.choke.clearLayers();
+    for (const c of sm.chokepoints) {
+      const col = statusColor(c.level.status);
+      L.circle([c.lat, c.lon], { radius: c.radiusKm * 1000, color: col, weight: 1.5, opacity: 0.9, fillColor: col, fillOpacity: 0.07, dashArray: '4 4' })
+        .on('click', () => openEntity('chokepoint', c.id)).addTo(L_.choke);
+      L.marker([c.lat, c.lon], { icon: L.divIcon({ className: '', html: `<div class="cp-label" style="color:${col}"><span class="t">${esc(c.name)}</span><b>${c.score ?? '—'}</b></div>`, iconSize: [0, 0] }) })
+        .on('click', () => openEntity('chokepoint', c.id)).addTo(L_.choke);
+    }
+    L_.hot.clearLayers();
+    for (const h of sm.hotspots) {
+      const col = statusColor(h.level.status);
+      L.marker([h.lat, h.lon], { icon: L.divIcon({ className: '', html: `<div class="hs-mark" style="color:${col}"></div>`, iconSize: [0, 0] }), title: `${h.name}: ${h.level.label} ${h.score ?? ''}` })
+        .on('click', () => openEntity('hotspot', h.id)).addTo(L_.hot);
+      L.marker([h.lat, h.lon], { interactive: false, icon: L.divIcon({ className: '', html: `<div class="hs-name">${esc(h.name)} <span style="color:${col}">${h.score ?? '—'}</span></div>`, iconSize: [0, 0] }) }).addTo(L_.hot);
+    }
+  }
+
+  function renderHazardsOnMap() {
+    const hz = S.hazards;
+    L_.quakes.clearLayers();
+    for (const q of hz.quakes) {
+      L.circleMarker([q.lat, q.lon], { radius: Math.max(3, (q.mag - 2) * 3), color: COLORS.quake, weight: 1.5, fillOpacity: q.mag >= 6 ? 0.45 : 0.15 })
+        .bindPopup(`<div class="h">M${fmt(q.mag)} — ${esc(q.place)}</div>${kv([['Depth', `${Math.round(q.depth)} km`], ['Time', new Date(q.time).toUTCString().slice(5, 22)], ['Tsunami flag', q.tsunami ? 'yes' : 'no'], ['PAGER', q.alert]])}${q.url ? `<a target="_blank" rel="noopener" href="${esc(q.url)}">USGS event ↗</a>` : ''}`)
+        .addTo(L_.quakes);
+    }
+    L_.eonet.clearLayers();
+    for (const e of hz.eonet) {
+      L.circleMarker([e.lat, e.lon], { radius: 4, color: '#d9dee3', weight: 1, fillColor: '#d9dee3', fillOpacity: 0.5 })
+        .bindPopup(`<div class="h">${esc(e.title)}</div>${kv([['Category', e.cat], ['Updated', e.date?.slice(0, 16)]])}${e.url ? `<a target="_blank" rel="noopener" href="${esc(e.url)}">Source ↗</a>` : ''}`)
+        .addTo(L_.eonet);
+    }
+    L_.gdacs.clearLayers();
+    const gcol = { Red: COLORS.critical, Orange: COLORS.serious, Green: COLORS.good };
+    for (const g of hz.gdacs) {
+      L.marker([g.lat, g.lon], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div style="width:11px;height:11px;transform:translate(-50%,-50%) rotate(45deg);border:2px solid ${gcol[g.level] || COLORS.muted};background:rgba(0,0,0,.5)"></div>` }) })
+        .bindPopup(`<div class="h">GDACS ${esc(g.level)} — ${esc(g.name)}</div>${kv([['Type', g.type], ['Country', g.country], ['Severity', g.severity], ['From', g.from?.slice(0, 10)]])}${g.url ? `<a target="_blank" rel="noopener" href="${esc(g.url)}">Report ↗</a>` : ''}`)
+        .addTo(L_.gdacs);
+    }
+    L_.fires.setData(hz.fires.map(([lat, lon, frp, date, time]) => ({ lat, lon, frp, date, time })));
+  }
+
+  function renderAir() {
+    const all = S.air.map(([id, lat, lon, hdg, alt, spd, cs, type, reg, mil, sq, src]) => ({ id, lat, lon, hdg, alt, spd, cs, type, reg, mil: !!mil, sq, src }));
+    L_.milair.setData(all.filter((a) => a.mil));
+    L_.civair.setData(all.filter((a) => !a.mil));
+  }
+  function renderShips() {
+    L_.ships.setData(S.ships.map(([id, lat, lon, cog, sog, name, type, nav, dest, src]) => ({ id, lat, lon, cog, sog, name, type, nav, dest, src })));
+  }
+
+  // ---------------- rendering: chrome ----------------
+  function renderTop() {
+    const sm = S.summary; if (!sm) return;
+    const lvl = levelOf(sm.gti);
+    $('#gtiVal').textContent = sm.gti ?? '--';
+    $('#gtiVal').className = `gti-val s-${lvl.status || 'null'}`;
+    $('#gtiLvl').outerHTML = `<span class="lvl s-${lvl.status || 'null'}" id="gtiLvl">${lvl.label}</span>`;
+    const hv = sm.gtiHistory.map((p) => p.v).filter((v) => v !== null);
+    if (hv.length > 1) {
+      const lo = Math.min(...hv) - 2; const hi = Math.max(...hv) + 2;
+      $('#gtiSpark').innerHTML = `<polyline fill="none" stroke="${statusColor(lvl.status)}" stroke-width="1.5" vector-effect="non-scaling-stroke" points="${hv.map((v, i) => `${(i / (hv.length - 1)) * 120},${26 - ((v - lo) / (hi - lo)) * 24}`).join(' ')}"/>`;
+    }
+    const c = sm.counts;
+    $('#counters').innerHTML = [
+      [`${fmt(c.liveParameters)}<span class="muted">/${fmt(c.parameters)}</span>`, 'LIVE PARAMETERS'], [fmt(c.milAircraft), 'MIL AIRCRAFT'], [fmt(c.aircraft), 'AIRCRAFT'],
+      [fmt(c.ships), 'VESSELS'], [fmt(c.insights), 'INSIGHTS'], [fmt(c.quakes), 'QUAKES 24H'], [fmt(c.events), 'HAZARD EVENTS'], [`${c.sourcesOnline}/${c.sources}`, 'SOURCES UP'],
+    ].map(([v, k]) => `<div class="counter"><b>${v}</b><span>${k}</span></div>`).join('');
+    $('#demoBanner').hidden = !sm.demo; document.body.classList.toggle('has-demo', !!sm.demo);
+  }
+
+  const LEVELS = [[80, 'SEVERE', 'critical'], [60, 'HIGH', 'serious'], [40, 'ELEVATED', 'warning'], [20, 'GUARDED', 'guarded'], [0, 'LOW', 'good']];
+  function levelOf(s) { if (s === null || s === undefined) return { label: 'NO DATA', status: null }; const [, label, status] = LEVELS.find(([t]) => s >= t); return { label, status }; }
+
+  function renderRail() {
+    const sm = S.summary;
+    const counts = { choke: sm?.chokepoints.length, hot: sm?.hotspots.length, milair: S.air.filter((a) => a[9]).length, civair: S.air.filter((a) => !a[9]).length,
+      ships: S.ships.length, fires: S.hazards.fires.length, quakes: S.hazards.quakes.length, eonet: S.hazards.eonet.length, gdacs: S.hazards.gdacs.length };
+    $('#layers').innerHTML = LAYER_META.map(([k, name, col]) => `<label class="layer-row"><input type="checkbox" data-layer="${k}" ${S.vis[k] ? 'checked' : ''}>
+      <span class="sw" style="background:${col}"></span><span class="name">${name}</span><span class="n">${fmt(counts[k] ?? 0)}</span></label>`).join('');
+    $('#riskLegend').innerHTML = LEVELS.slice().reverse().map(([t, l, st], i, a) => `<div style="display:flex;justify-content:space-between;align-items:center"><span class="lvl s-${st}">${l}</span><span class="mono muted" style="font-size:10px">${t}–${i < a.length - 1 ? a[i + 1][0] - 1 : 100}</span></div>`).join('');
+    if (!sm) return;
+    $('#srcCount').textContent = `${sm.counts.sourcesOnline}/${sm.counts.sources}`;
+    $('#sources').innerHTML = sm.health.map((h) => `<div class="src" title="${esc(h.lastError || `${h.name} — ${h.source}`)}">
+      <span class="d ${h.disabled ? 'off' : h.ok ? 'ok' : 'err'}"></span>
+      <span class="nm">${esc(h.name)}<small>${esc(h.disabled ? `needs ${h.needsKey}` : h.ok ? h.source : (h.lastError || 'waiting…'))}</small></span>
+      <span class="ct">${h.ok ? `${fmt(h.count)}<br>${ago(h.lastOk)}` : h.disabled ? 'off' : '—'}</span></div>`).join('');
+  }
+  $('#layers').addEventListener('change', (e) => { const k = e.target.dataset.layer; if (k) { S.vis[k] = e.target.checked; applyVis(); } });
+  $('#railToggle').addEventListener('click', () => $('#rail').classList.toggle('open'));
+
+  function renderTicker() {
+    const sm = S.summary; if (!sm) return;
+    const items = sm.markets.filter((m) => m.price !== null).map((m) => `<span><span class="s">${esc(m.name)}</span>${fmt(m.price, 2)} ${pct(m.chg)}</span>`);
+    if (sm.crypto) for (const [k, v] of Object.entries(sm.crypto)) items.push(`<span><span class="s">${esc(k.toUpperCase())}</span>${fmt(v.price, 2)} ${pct(v.chg)}</span>`);
+    if (sm.spaceWx?.kp !== null && sm.spaceWx) items.push(`<span><span class="s">Kp INDEX</span>${fmt(sm.spaceWx.kp)}</span>`);
+    const html = items.join('') || '<span class="muted">Waiting for market data…</span>';
+    const t = $('#ticker'); if (t.dataset.h !== html) { t.innerHTML = html; t.dataset.h = html; }
+  }
+
+  // ---------------- tabs ----------------
+  $('#tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tab]'); if (!b) return;
+    S.tab = b.dataset.tab; try { localStorage.setItem('sentinel.tab', S.tab); } catch { /* ignore */ }
+    closeDrawer(); renderTab(true);
+  });
+
+  function renderTab(scrollTop) {
+    document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === S.tab));
+    const body = $('#tabbody'); const sm = S.summary;
+    if (!sm) { body.innerHTML = '<div class="muted">Connecting to fusion engine…</div>'; return; }
+    const keepScroll = body.scrollTop;
+    const focused = document.activeElement && body.contains(document.activeElement) ? document.activeElement.id : null;
+    body.innerHTML = ({ brief: tabBrief, choke: tabChoke, theatres: tabTheatres, markets: tabMarkets, params: tabParams, intel: tabIntel, cyber: tabCyber }[S.tab] || tabBrief)(sm);
+    body.scrollTop = scrollTop ? 0 : keepScroll;
+    if (focused) { const el = document.getElementById(focused); if (el) { el.focus(); if (el.setSelectionRange && el.value) el.setSelectionRange(el.value.length, el.value.length); } }
+    if (S.tab === 'params' && !S.params) loadParams();
+  }
+
+  function tabBrief(sm) {
+    const bySev = (s) => sm.insights.filter((i) => i.sev === s).length;
+    const kinds = ['All', ...new Set(sm.insights.map((i) => i.kind))];
+    const list = sm.insights.filter((i) => S.kindFilter === 'All' || i.kind === S.kindFilter);
+    const top = [...sm.chokepoints, ...sm.hotspots].filter((e) => e.score !== null).sort((a, b) => b.score - a.score).slice(0, 6);
+    return `<div class="cards">
+        <div class="card"><div class="k">Critical / High</div><div class="v"><span class="s-critical">${bySev(4)}</span> / <span class="s-serious">${bySev(3)}</span></div></div>
+        <div class="card"><div class="k">Elevated</div><div class="v s-warning">${bySev(2)}</div></div>
+        <div class="card"><div class="k">Updated</div><div class="v" style="font-size:14px;padding-top:4px">${new Date(sm.generatedAt).toISOString().slice(11, 19)}Z</div></div>
+      </div>
+      <h3>Highest-risk theatres</h3>
+      ${top.map(entRow).join('')}
+      <h3 style="margin-top:18px">Insights <span class="muted">${list.length}</span></h3>
+      <div class="toolbar">${kinds.map((k) => `<button class="chip ${S.kindFilter === k ? 'on' : ''}" data-kind="${esc(k)}">${esc(k)}</button>`).join('')}</div>
+      ${list.length ? list.map(insightRow).join('') : '<div class="muted">No anomalies above threshold. The board flags only what crosses a rule — silence is a finding.</div>'}`;
+  }
+
+  function insightRow(i) {
+    const s = SEV[i.sev] || SEV[1];
+    return `<div class="insight s-${s.status}" data-entity="${esc(i.entity)}" data-lat="${i.lat ?? ''}" data-lon="${i.lon ?? ''}">
+      <div class="bar"></div><div>
+      <div class="meta"><span class="lvl s-${s.status}">${s.label}</span><span class="kind">${esc(i.kind)}</span><span>${esc(i.entityName || '')}</span></div>
+      <div class="ttl" style="color:var(--text-primary)">${esc(i.title)}</div>
+      <div class="det">${esc(i.detail || '')}</div></div></div>`;
+  }
+
+  function entRow(e) {
+    const sub = e.kind === 'chokepoint'
+      ? [['Vessels', e.vessels || '—'], ['Mil air', e.milNear], ['Waves', e.weather?.wave != null ? `${fmt(e.weather.wave)} m` : '—'], ['Oil ref', e.oilMbd ? `${e.oilMbd} mb/d` : '—']]
+      : [['Mil air', e.milIn], ['Fires', e.fires], ['Advisory', e.advisory ? `L${e.advisory}` : '—'], ['Coverage', `${e.coverage}%`]];
+    return `<div class="ent" data-kind="${e.kind}" data-id="${e.id}">
+      <div><div class="nm">${esc(e.name)}</div></div>
+      <div class="right">${pill(e.level)}<span class="score s-${e.level.status || 'null'}">${e.score ?? '—'}</span></div>
+      <div class="meter s-${e.level.status || 'null'}"><i style="width:${e.score ?? 0}%"></i></div>
+      <div class="sub">${sub.map(([k, v]) => `<span>${k} <b>${esc(v)}</b></span>`).join('')}</div></div>`;
+  }
+
+  function tabChoke(sm) {
+    const list = [...sm.chokepoints].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    return `<h3>Maritime chokepoints <span class="muted">${list.length}</span></h3>
+      <p class="muted" style="margin:-4px 0 10px;font-size:12px">Score fuses news surge, media tone, military air activity, sea state, traffic stoppage and hazards. Oil flows are reference baselines, not live.</p>
+      ${list.map(entRow).join('')}`;
+  }
+  function tabTheatres(sm) {
+    const list = [...sm.hotspots].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    return `<h3>Conflict & tension theatres <span class="muted">${list.length}</span></h3>
+      <p class="muted" style="margin:-4px 0 10px;font-size:12px">Score fuses reporting surge & tone (GDELT), military aircraft, thermal anomalies, travel advisories, internet outages and hazards.</p>
+      ${list.map(entRow).join('')}`;
+  }
+
+  function tabMarkets(sm) {
+    const groups = {};
+    for (const m of sm.markets) (groups[m.group] = groups[m.group] || []).push(m);
+    const why = { Energy: 'Chokepoint & sanctions sensitivity', Metals: 'Safe-haven demand', Agri: 'Black Sea / food security', Risk: 'Global risk appetite',
+      FX: 'Stress in exposed economies', Shipping: 'Freight & rerouting proxies', Defense: 'Escalation expectations' };
+    let html = '';
+    for (const [g, ms] of Object.entries(groups)) {
+      html += `<h3 style="margin-top:14px">${esc(g)} <span class="muted">· ${why[g] || ''}</span></h3><table class="tbl"><thead><tr><th>Instrument</th><th style="text-align:right">Last</th><th style="text-align:right">1D</th><th style="text-align:right">1M</th><th style="width:90px">30D</th></tr></thead><tbody>`
+        + ms.map((m) => `<tr><td>${esc(m.name)} <span class="muted mono" style="font-size:10px">${esc(m.sym)}</span></td><td class="num">${fmt(m.price, 2)}</td><td class="num">${pct(m.chg)}</td><td class="num">${pct(m.chg1m)}</td>
+          <td>${m.spark?.length > 1 ? spark(m.spark, { h: 22, area: false, color: (m.chg1m ?? 0) >= 0 ? '#5fd35f' : '#ff7a7a' }) : ''}</td></tr>`).join('')
+        + '</tbody></table>';
+    }
+    if (sm.crypto) {
+      html += `<h3 style="margin-top:14px">Crypto <span class="muted">· capital-flight & sanctions-evasion proxy</span></h3><table class="tbl"><tbody>`
+        + Object.entries(sm.crypto).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">$${fmt(v.price, 2)}</td><td class="num">${pct(v.chg)}</td><td class="num muted">vol ${fmt(v.vol)}</td></tr>`).join('') + '</tbody></table>';
+    }
+    return html;
+  }
+
+  function tabParams() {
+    if (!S.params) return '<div class="muted">Loading parameter registry…</div>';
+    const q = S.paramQ.toLowerCase();
+    const rows = S.params.filter((p) => (S.paramType === 'all' || p.entityType === S.paramType)
+      && (!S.paramFlagged || ['warning', 'serious', 'critical'].includes(p.status))
+      && (!q || `${p.entityName} ${p.label} ${p.group} ${p.source}`.toLowerCase().includes(q)));
+    const live = S.params.filter((p) => p.value !== null && p.value !== undefined).length;
+    return `<h3>Parameter registry <span class="muted">${S.params.length} tracked · ${live} live · ${rows.length} shown</span></h3>
+      <div class="toolbar">
+        <input id="pq" type="search" placeholder="Filter: hormuz, tone, tanker, kp…" value="${esc(S.paramQ)}">
+        <select id="pt"><option value="all">All scopes</option>${['chokepoint', 'hotspot', 'global'].map((t) => `<option value="${t}" ${S.paramType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        <button class="chip ${S.paramFlagged ? 'on' : ''}" id="pf">Flagged only</button>
+      </div>
+      <table class="tbl"><thead><tr><th>Entity</th><th>Parameter</th><th style="text-align:right">Value</th><th>State</th><th>Source</th></tr></thead><tbody>
+      ${rows.slice(0, 900).map((p) => `<tr class="${p.entityType !== 'global' ? 'click' : ''}" data-kind="${p.entityType}" data-id="${esc(p.entity)}">
+        <td>${esc(p.entityName)}</td><td>${esc(p.label)}</td><td class="num">${fmt(p.value)}${p.value !== null && p.unit ? ` <span class="muted">${esc(p.unit)}</span>` : ''}</td>
+        <td>${p.status ? `<span class="lvl s-${p.status}">${STATUS_LABEL[p.status]}</span>` : ''}</td><td class="muted" style="font-size:11px">${esc(p.source)}</td></tr>`).join('')}
+      </tbody></table>`;
+  }
+
+  function tabIntel(sm) {
+    const all = [...sm.globalNews.map((a) => ({ ...a, tag: 'Global' }))];
+    for (const e of [...sm.chokepoints, ...sm.hotspots]) for (const a of e.news || []) all.push({ ...a, tag: e.name });
+    const seen = new Set();
+    const list = all.filter((a) => a.url && !seen.has(a.url) && seen.add(a.url)).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 200);
+    return `<h3>Open-source reporting <span class="muted">${list.length} · GDELT, last 24h</span></h3>
+      ${list.map((a) => `<div class="news"><a target="_blank" rel="noopener" href="${esc(a.url)}">${esc(a.title)}</a>
+        <div class="m">${esc(a.tag)} · ${esc(a.domain)} · ${esc(a.country || '')} · ${a.ts ? ago(a.ts) : ''}</div></div>`).join('') || '<div class="muted">Waiting for GDELT…</div>'}`;
+  }
+
+  function tabCyber(sm) {
+    const k = sm.kev; const sw = sm.spaceWx; const out = sm.outages ? Object.values(sm.outages).sort((a, b) => b.critical - a.critical || b.alerts - a.alerts) : null;
+    return `<div class="cards">
+        <div class="card"><div class="k">KEV · 7 days</div><div class="v">${fmt(k?.d7)}</div></div>
+        <div class="card"><div class="k">KEV · 30 days</div><div class="v">${fmt(k?.d30)}</div></div>
+        <div class="card"><div class="k">Ransomware-linked</div><div class="v">${fmt(k?.ransomware30)}</div></div>
+      </div>
+      <h3>Newly exploited vulnerabilities <span class="muted">CISA KEV</span></h3>
+      <table class="tbl"><tbody>${(k?.latest || []).map((x) => `<tr><td class="mono" style="white-space:nowrap"><a target="_blank" rel="noopener" href="https://nvd.nist.gov/vuln/detail/${esc(x.id)}">${esc(x.id)}</a></td><td>${esc(x.vendor)} ${esc(x.product)}${x.ransomware ? ' <span class="lvl s-serious">RANSOMWARE</span>' : ''}</td><td class="num muted">${esc(x.added)}</td></tr>`).join('') || '<tr><td class="muted">Waiting for CISA…</td></tr>'}</tbody></table>
+      <h3 style="margin-top:18px">Internet outages <span class="muted">IODA · 24h</span></h3>
+      <table class="tbl"><tbody>${out ? out.slice(0, 25).map((o) => `<tr><td>${esc(o.name)}</td><td class="num">${o.critical ? `<span class="lvl s-serious">${o.critical} CRITICAL</span>` : ''}</td><td class="num">${o.alerts} alerts</td><td class="muted mono" style="font-size:10px">${esc(o.sources.join(', '))}</td></tr>`).join('') || '<tr><td class="muted">No outage alerts</td></tr>' : '<tr><td class="muted">Waiting for IODA…</td></tr>'}</tbody></table>
+      <h3 style="margin-top:18px">Space weather <span class="muted">NOAA SWPC · affects GNSS & HF</span></h3>
+      <div class="cards"><div class="card"><div class="k">Kp now</div><div class="v ${sw?.kp >= 5 ? 's-serious' : ''}">${fmt(sw?.kp)}</div></div><div class="card"><div class="k">Kp max 24h</div><div class="v">${fmt(sw?.kpMax24)}</div></div><div class="card"><div class="k">Alerts 24h</div><div class="v">${sw ? sw.alerts.length : '—'}</div></div></div>
+      ${sw?.series ? spark(sw.series, { h: 44, color: 'var(--accent)' }) : ''}
+      ${(sw?.alerts || []).map((a) => `<div class="news"><span class="mono">${esc(a.title)}</span><div class="m">${esc(a.id)} · ${esc(a.ts)} UTC</div></div>`).join('')}`;
+  }
+
+  // ---------------- entity drawer ----------------
+  function findEntity(kind, id) {
+    const sm = S.summary; if (!sm) return null;
+    return (kind === 'chokepoint' ? sm.chokepoints : sm.hotspots).find((e) => e.id === id);
+  }
+  function openEntity(kind, id) {
+    const e = findEntity(kind, id); if (!e) return;
+    S.drawer = { kind, id };
+    L_.focus.clearLayers();
+    if (e.box) L.rectangle(e.box, { color: COLORS[e.level.status] || COLORS.muted, weight: 1, dashArray: '3 5', fill: false }).addTo(L_.focus);
+    map.flyTo([e.lat, e.lon], kind === 'chokepoint' ? 6.5 : 5, { duration: 0.8 });
+    if (!S.params) loadParams();
+    renderDrawer();
+  }
+  function closeDrawer() { S.drawer = null; $('#drawer').hidden = true; L_.focus.clearLayers(); }
+
+  function renderDrawer() {
+    if (!S.drawer) return;
+    const { kind, id } = S.drawer; const e = findEntity(kind, id); if (!e) return;
+    const params = (S.params || []).filter((p) => p.entity === id && p.entityType === kind);
+    const w = e.weather;
+    const d = $('#drawer'); const st = d.scrollTop;
+    d.hidden = false;
+    d.innerHTML = `<button class="back" id="back">← BACK</button>
+      <h2>${esc(e.name)}</h2>
+      <div style="display:flex;gap:10px;align-items:center">${pill(e.level)}<span class="score s-${e.level.status || 'null'}" style="font-size:24px">${e.score ?? '—'}</span><span class="muted mono" style="font-size:11px">/100 · model coverage ${e.coverage}%</span></div>
+      ${e.tradeShare ? `<div class="lead" style="margin-top:8px">${esc(e.tradeShare)}${e.oilMbd ? ` · ~${e.oilMbd} mb/d oil (reference)` : ''}</div>` : ''}
+      <section><h3>Why this score</h3>
+        ${e.components.map((c) => `<div class="comp ${c.value === null ? 'na' : ''}"><span>${esc(c.name)} <span class="muted mono" style="font-size:10px">w${c.weight}</span></span>
+          <span class="track"><i style="width:${c.value === null ? 0 : c.value * 100}%"></i></span><span class="pct">${c.value === null ? 'n/a' : `${Math.round(c.value * 100)}%`}</span></div>`).join('')}
+      </section>
+      <section><h3>Risk score · last 24h</h3>${spark(e.history, { h: 46, color: statusColor(e.level.status) })}</section>
+      <section><h3>Reporting volume · 7 days <span class="muted">articles/day</span></h3>${spark(e.newsVolSeries, { h: 40, labels: dayLabels(e.newsVolSeries.length) })}</section>
+      <section><h3>Media tone · 7 days <span class="muted">GDELT, lower = more negative</span></h3>${spark(e.toneSeries, { h: 40, color: 'var(--serious)', labels: dayLabels(e.toneSeries.length) })}</section>
+      ${w ? `<section><h3>Conditions</h3><div class="cards">
+        <div class="card"><div class="k">Wind / gust</div><div class="v" style="font-size:15px">${fmt(w.wind)} / ${fmt(w.gust)} kn</div></div>
+        <div class="card"><div class="k">Waves</div><div class="v" style="font-size:15px">${fmt(w.wave)} m</div></div>
+        <div class="card"><div class="k">Visibility</div><div class="v" style="font-size:15px">${w.vis != null ? fmt(w.vis / 1000) : '—'} km</div></div></div></section>` : ''}
+      <section><h3>Parameters <span class="muted">${params.length}</span></h3>
+        <table class="tbl"><tbody>${params.map((p) => `<tr><td>${esc(p.label)}</td><td class="num">${fmt(p.value)}${p.value !== null && p.unit ? ` <span class="muted">${esc(p.unit)}</span>` : ''}</td><td>${p.status ? `<span class="lvl s-${p.status}">${STATUS_LABEL[p.status]}</span>` : ''}</td><td class="muted" style="font-size:10.5px">${esc(p.source)}</td></tr>`).join('') || '<tr><td class="muted">Loading…</td></tr>'}</tbody></table></section>
+      <section><h3>Latest reporting</h3>${(e.news || []).map((a) => `<div class="news"><a target="_blank" rel="noopener" href="${esc(a.url)}">${esc(a.title)}</a><div class="m">${esc(a.domain)} · ${a.ts ? ago(a.ts) : ''}</div></div>`).join('') || '<div class="muted">Waiting for GDELT…</div>'}</section>`;
+    d.scrollTop = st;
+    $('#back').onclick = closeDrawer;
+  }
+  const dayLabels = (n) => Array.from({ length: n }, (_, i) => new Date(Date.now() - (n - 1 - i) * 86_400_000).toISOString().slice(5, 10));
+
+  // Delegated clicks inside the panel.
+  $('#tabbody').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-kind-filter], .chip[data-kind]');
+    if (chip) { S.kindFilter = chip.dataset.kind; renderTab(); return; }
+    if (e.target.id === 'pf') { S.paramFlagged = !S.paramFlagged; renderTab(); return; }
+    const ent = e.target.closest('.ent, tr.click');
+    if (ent && ent.dataset.kind !== 'global') { openEntity(ent.dataset.kind, ent.dataset.id); return; }
+    const ins = e.target.closest('.insight');
+    if (ins) {
+      const cp = findEntity('chokepoint', ins.dataset.entity); const hs = findEntity('hotspot', ins.dataset.entity);
+      if (cp) openEntity('chokepoint', cp.id); else if (hs) openEntity('hotspot', hs.id);
+      else if (ins.dataset.lat) map.flyTo([+ins.dataset.lat, +ins.dataset.lon], 5);
+    }
+  });
+  $('#tabbody').addEventListener('input', (e) => {
+    if (e.target.id === 'pq') { S.paramQ = e.target.value; renderTab(); }
+    if (e.target.id === 'pt') { S.paramType = e.target.value; renderTab(); }
+  });
+  $('#gti').addEventListener('click', () => { S.tab = 'brief'; closeDrawer(); renderTab(true); });
+
+  // ---------------- data plumbing ----------------
+  const getJSON = (u) => fetch(u, { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+
+  async function loadSummary() {
+    S.summary = await getJSON('/api/summary');
+    renderTop(); renderRail(); renderTicker(); renderEntitiesOnMap();
+    if (!(S.tab === 'params' && document.activeElement?.id === 'pq')) renderTab();
+    renderDrawer();
+  }
+  async function loadParams() {
+    S.params = await getJSON('/api/parameters');
+    if (S.tab === 'params') renderTab(); renderDrawer();
+  }
+  async function loadLayer(name) {
+    const d = await getJSON(`/api/layer/${name}`);
+    if (name === 'air') { S.air = d; renderAir(); }
+    if (name === 'ships') { S.ships = d; renderShips(); }
+    if (name === 'hazards') { S.hazards = d; renderHazardsOnMap(); }
+    renderRail();
+  }
+
+  // Coalesce bursts of version bumps: at most one fetch per resource per 2.5 s.
+  const pending = new Set(); let flushT = null;
+  function want(r) { pending.add(r); if (!flushT) flushT = setTimeout(flush, 600); }
+  async function flush() {
+    const list = [...pending]; pending.clear();
+    for (const r of list) {
+      try {
+        if (r === 'summary') await loadSummary();
+        else if (r === 'params') { if (S.tab === 'params' || S.drawer) await loadParams(); else S.params = null; }
+        else await loadLayer(r);
+      } catch (e) { console.warn('load', r, e); }
+    }
+    flushT = setTimeout(() => { flushT = null; if (pending.size) want([...pending][0]); }, 2500);
+  }
+
+  function onVersions(v) {
+    for (const [k, n] of Object.entries(v)) if (S.versions[k] !== n) want(k);
+    S.versions = v;
+  }
+
+  const live = $('#live');
+  function connect() {
+    const es = new EventSource('/api/stream');
+    es.addEventListener('versions', (e) => { live.className = 'live on'; $('#liveTxt').textContent = 'LIVE'; onVersions(JSON.parse(e.data)); });
+    es.onerror = () => { live.className = 'live off'; $('#liveTxt').textContent = 'RECONNECTING'; };
+  }
+
+  // ---------------- boot ----------------
+  setInterval(() => { $('#clock').textContent = new Date().toISOString().slice(11, 19); }, 1000);
+  setInterval(() => { renderRail(); }, 15_000); // refresh "x ago" labels
+  renderTab(); renderRail();
+  Promise.allSettled([loadSummary(), loadLayer('air'), loadLayer('ships'), loadLayer('hazards')]).then(connect);
+})();

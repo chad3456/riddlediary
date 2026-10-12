@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SENTINEL · OSINT Fusion</title>
+  <meta name="description" content="Real-time open-source intelligence board: chokepoints, military aviation, shipping, conflict reporting, hazards, cyber and markets.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 30 16 16 30 2 16z' fill='none' stroke='%2346c2ff' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2346c2ff'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="glyph">◈</span> SENTINEL <span class="sub">OSINT FUSION</span></div>
+    <button class="gti" id="gti" title="Global Threat Index — mean of the five highest-scoring theatres">
+      <span class="gti-label">GLOBAL THREAT</span>
+      <span class="gti-val" id="gtiVal">--</span>
+      <span class="lvl" id="gtiLvl">NO DATA</span>
+      <svg class="gti-spark" id="gtiSpark" viewBox="0 0 120 26" preserveAspectRatio="none"></svg>
+    </button>
+    <div class="counters" id="counters"></div>
+    <div class="clock"><span id="clock">--:--:--</span><span class="z">UTC</span></div>
+    <div class="live" id="live"><span class="dot"></span><span id="liveTxt">CONNECTING</span></div>
+  </header>
+  <div class="demo-banner" id="demoBanner" hidden>DEMO DATA — synthetic values for offline development. Run <code>npm start</code> without <code>--demo</code> for live OSINT feeds.</div>
+
+  <main class="layout">
+    <aside class="rail" id="rail">
+      <section>
+        <h3>Layers</h3>
+        <div id="layers"></div>
+      </section>
+      <section>
+        <h3>Risk levels</h3>
+        <div class="legend" id="riskLegend"></div>
+      </section>
+      <section>
+        <h3>Sources <span class="muted" id="srcCount"></span></h3>
+        <div id="sources" class="sources"></div>
+      </section>
+    </aside>
+
+    <div class="mapwrap">
+      <div id="map"></div>
+      <div class="hover-card" id="hoverCard" hidden></div>
+      <button class="rail-toggle" id="railToggle" aria-label="Toggle layers panel">☰</button>
+    </div>
+
+    <aside class="panel" id="panel">
+      <nav class="tabs" id="tabs" role="tablist">
+        <button data-tab="brief" class="on">Brief</button>
+        <button data-tab="choke">Chokepoints</button>
+        <button data-tab="theatres">Theatres</button>
+        <button data-tab="markets">Markets</button>
+        <button data-tab="params">Parameters</button>
+        <button data-tab="intel">Intel</button>
+        <button data-tab="cyber">Cyber · Space</button>
+      </nav>
+      <div class="tabbody" id="tabbody"></div>
+      <div class="drawer" id="drawer" hidden></div>
+    </aside>
+  </main>
+
+  <footer class="ticker"><div class="ticker-track" id="ticker"></div></footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
