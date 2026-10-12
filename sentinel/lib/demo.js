@@ -4,6 +4,7 @@
 // normalizers → fusion → UI) can be developed and tested offline.
 // The UI shows a permanent "DEMO DATA" banner whenever this is active.
 
+const zlib = require('zlib');
 const { CHOKEPOINTS, HOTSPOTS, MARKETS } = require('./catalog');
 
 let seed = 7;
@@ -15,7 +16,7 @@ const mins = () => (Date.now() - T0) / 60_000;
 // "Hot" theatres get surging news and more military traffic in the demo.
 const HOT = { hormuz: 2.6, babelmandeb: 3.4, taiwan: 2.1, ukraine: 1.9, gaza: 1.6, sudan: 2.4, kerch: 1.7, iran: 2.2, baltic: 1.5 };
 
-const MIL_TYPES = ['C17', 'K35R', 'RC135', 'P8', 'E3TF', 'F16', 'A332', 'C130', 'H60', 'KC46', 'MQ9', 'C30J', 'GLEX', 'A400', 'E2'];
+const MIL_TYPES = ['C17', 'K35R', 'RC135', 'P8', 'E3TF', 'F16', 'A332', 'C130', 'H60', 'KC46', 'Q9', 'C30J', 'GLEX', 'A400', 'E2', 'Q4'];
 const anchors = [...CHOKEPOINTS, ...HOTSPOTS];
 const milFleet = Array.from({ length: 190 }, (_, i) => {
   const a = rnd() < 0.7 ? pick(anchors) : { lat: rnd() * 120 - 50, lon: rnd() * 340 - 170 };
@@ -60,13 +61,15 @@ function respond(url) {
 
   if (/adsb\.lol|airplanes\.live/.test(h) && p.endsWith('/mil')) {
     return json({ ac: milFleet.map((a) => ({ hex: a.hex, flight: a.flight, t: a.t, ...move({ ...a, lat0: a.lat0, lon0: a.lon0 }, a.gs / 32),
-      alt_baro: a.alt, gs: a.gs, track: a.hdg, dbFlags: 1, squawk: a.hex === 'ae1003' ? '7700' : '4000' })) });
+      alt_baro: a.alt, gs: a.gs, track: a.hdg, dbFlags: 1, squawk: a.hex === 'ae1003' ? '7700' : '4000', nac_p: 9, nic: 8 })) });
   }
   if (h === 'api.adsb.lol' && p.includes('/point/')) {
     const [, , , lat, lon] = p.split('/').map(Number);
     const n = 20 + Math.floor(rnd() * 70);
     return json({ ac: Array.from({ length: n }, (_, i) => ({ hex: `c${Math.floor(lat * 100)}${i}`.replace('-', 'm'), flight: `${pick(['UAE', 'QTR', 'SIA', 'BAW', 'DLH', 'THY', 'CPA'])}${200 + i}`,
-      lat: lat + (rnd() - 0.5) * 3, lon: lon + (rnd() - 0.5) * 3, alt_baro: 30000 + Math.round(rnd() * 9000), gs: 430 + rnd() * 60, track: rnd() * 360, t: pick(['B77W', 'A359', 'A21N', 'B38M', 'B789']) })) });
+      lat: lat + (rnd() - 0.5) * 3, lon: lon + (rnd() - 0.5) * 3, alt_baro: 30000 + Math.round(rnd() * 9000), gs: 430 + rnd() * 60, track: rnd() * 360, t: pick(['B77W', 'A359', 'A21N', 'B38M', 'B789']),
+      // Demo jamming: aircraft near the Baltic, Black Sea and Gulf report degraded accuracy.
+      nac_p: rnd() < ({ 55: 0.45, 45: 0.35, 41: 0.3, 26: 0.25 }[Math.round(lat)] || 0.03) ? Math.floor(rnd() * 5) : 9 + Math.floor(rnd() * 2), nic: 8 })) });
   }
   if (h === 'earthquake.usgs.gov') {
     const features = Array.from({ length: 45 }, (_, i) => ({ id: `demo${i}`, properties: { mag: +(2.5 + rnd() ** 2 * 4).toFixed(1), place: `${Math.round(rnd() * 90)} km of synthetic location ${i}`, time: Date.now() - rnd() * 86_400_000, tsunami: 0, url: 'https://earthquake.usgs.gov' },
@@ -104,7 +107,7 @@ function respond(url) {
       return { geometry: { coordinates: [pos.lon, pos.lat] }, properties: { mmsi: 230000000 + i, sog: i % 4 === 0 ? 0.1 : 9 + (i % 7), cog: o.hdg, heading: o.hdg, navStat: i % 4 === 0 ? 1 : 0, timestampExternal: Date.now() } };
     }) });
   }
-  if (h === 'api.gdeltproject.org') {
+  if (h === 'api.gdeltproject.org' && !p.includes('/geo/')) {
     const q = u.searchParams.get('query');
     const ent = [...CHOKEPOINTS, ...HOTSPOTS].find((e) => e.query === q);
     const hot = ent ? HOT[ent.id] || 1 : 1.2;
@@ -147,7 +150,105 @@ function respond(url) {
     const lv = { Ukraine: 4, Russia: 4, Iran: 4, Yemen: 4, Sudan: 4, Syria: 4, Lebanon: 4, Iraq: 4, Libya: 4, Somalia: 4, Mali: 4, 'Burkina Faso': 4, Haiti: 4, Venezuela: 4, Burma: 4, 'North Korea': 4, Israel: 3, Niger: 4, Pakistan: 3, 'Democratic Republic of the Congo': 3, Azerbaijan: 2, Armenia: 2, Philippines: 2, China: 3, Taiwan: 1, India: 2, Estonia: 1, Finland: 1 };
     return json(Object.entries(lv).map(([c, l]) => ({ Title: `${c} - Level ${l}: Demo Advisory`, Link: 'https://travel.state.gov', Updated: new Date().toISOString() })));
   }
+  if (h === 'data.gdeltproject.org') {
+    if (p.endsWith('lastupdate.txt')) {
+      const t = new Date(Math.floor(Date.now() / 900_000) * 900_000).toISOString().replace(/[-:T]/g, '').slice(0, 14);
+      return text(`123 abc http://data.gdeltproject.org/gdeltv2/${t}.export.CSV.zip\n456 def http://data.gdeltproject.org/gdeltv2/${t}.mentions.CSV.zip\n`);
+    }
+    const stamp = /(\d{14})/.exec(p)[1];
+    return binary(zipOne(`${stamp}.export.CSV`, Buffer.from(gdeltExport(stamp))));
+  }
+  if (h === 'api.gdeltproject.org' && p.includes('/geo/')) {
+    const q = u.searchParams.get('query');
+    const topic = /drone/i.test(q) ? 'drone' : /protest/i.test(q) ? 'protest' : /shutdown/i.test(q) ? 'shutdown' : /GPS/i.test(q) ? 'jamming' : 'cyber';
+    const places = { drone: ['ukraine', 'ukraine', 'yemen', 'sudan', 'lebanon', 'iran'], protest: ['iran', 'kashmir', 'venezuela', 'haiti', 'sahel'], shutdown: ['iran', 'sudan', 'myanmar'], jamming: ['baltic', 'ukraine', 'lebanon'], cyber: ['ukraine', 'iran', 'taiwan'] }[topic];
+    return json({ type: 'FeatureCollection', features: Array.from({ length: 40 }, (_, i) => {
+      const hs = HOTSPOTS.find((x) => x.id === places[i % places.length]);
+      return { type: 'Feature', geometry: { type: 'Point', coordinates: [hs.lon + (rnd() - 0.5) * 5, hs.lat + (rnd() - 0.5) * 4] },
+        properties: { name: `${hs.name} (demo locality ${i})`, count: 1 + Math.floor(rnd() ** 2 * 12), html: `<a href="https://example.org/demo" title="[DEMO] ${topic} report ${i}">[DEMO] ${topic} report ${i}</a>` } };
+    }) });
+  }
+  if (h === 'celestrak.org') {
+    const g = u.searchParams.get('GROUP');
+    const n = { military: 60, resource: 90, radar: 15, gnss: 32 }[g] || 20;
+    const lines = [];
+    for (let i = 0; i < n; i++) {
+      const no = 40000 + ({ military: 0, resource: 1000, radar: 2000, gnss: 3000 }[g] || 0) + i;
+      const [inc, mm] = g === 'gnss' ? [55, 2.0056] : g === 'military' && i % 5 === 0 ? [63.4, 2.006] : [97.5 + rnd(), 14.8 + rnd() * 0.6];
+      lines.push(`DEMO-${g.toUpperCase()} ${i}`, ...tle(no, inc, rnd() * 360, g === 'military' && i % 5 === 0 ? 0.7 : 0.001, rnd() * 360, rnd() * 360, mm));
+    }
+    return text(lines.join('\n'));
+  }
+  if (h === 'api.cloudflare.com') {
+    return json({ result: { annotations: [
+      { id: 'demo1', startDate: new Date(Date.now() - 5 * 3_600_000).toISOString(), endDate: null, scope: 'Nationwide', description: '[DEMO] Mobile and fixed networks cut during protests',
+        outage: { outageCause: 'GOVERNMENT_DIRECTED', outageType: 'NATIONWIDE' }, locations: ['IR'], locationsDetails: [{ code: 'IR', name: 'Iran' }], linkedUrl: 'https://radar.cloudflare.com' },
+      { id: 'demo2', startDate: new Date(Date.now() - 30 * 3_600_000).toISOString(), endDate: null, scope: 'Regional', description: '[DEMO] Power outage affects connectivity',
+        outage: { outageCause: 'POWER_OUTAGE', outageType: 'REGIONAL' }, locations: ['SD'], locationsDetails: [{ code: 'SD', name: 'Sudan' }] },
+      { id: 'demo3', startDate: new Date(Date.now() - 60 * 3_600_000).toISOString(), endDate: new Date(Date.now() - 50 * 3_600_000).toISOString(), description: '[DEMO] Submarine cable damage',
+        outage: { outageCause: 'CABLE_CUT', outageType: 'NATIONWIDE' }, locations: ['YE'], locationsDetails: [{ code: 'YE', name: 'Yemen' }] },
+    ] } });
+  }
   return { ok: false, status: 404, text: async () => 'demo: no fixture' };
+}
+
+const binary = (buf) => ({ ok: true, status: 200, text: async () => buf.toString('latin1'), arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) });
+
+// Synthetic GDELT 2.0 export rows (61 tab-separated columns, real layout).
+const EV_MIX = { ukraine: { '195': 6, '190': 4, '193': 3, '1412': 1 }, sudan: { '195': 3, '193': 5, '202': 1 }, gaza: { '195': 4, '190': 2, '141': 2 },
+  iran: { '141': 9, '145': 4, '1411': 2 }, kashmir: { '141': 4, '145': 2 }, venezuela: { '141': 6, '145': 2 }, haiti: { '145': 3, '193': 2 },
+  myanmar: { '195': 2, '193': 3 }, sahel: { '193': 2, '195': 1, '141': 2 }, lebanon: { '195': 2 }, yemen: { '195': 2, '190': 1 }, korea: { '141': 1 } };
+function gdeltExport(stamp) {
+  const rows = [];
+  let k = 0;
+  for (const [id, mix] of Object.entries(EV_MIX)) {
+    const hs = HOTSPOTS.find((x) => x.id === id);
+    for (const [code, n] of Object.entries(mix)) for (let i = 0; i < n; i++) {
+      if (rnd() > 0.3) continue; // sparse, like a real 15-minute file
+      const c = new Array(61).fill('');
+      c[0] = `${stamp}${String(k++).padStart(4, '0')}`; c[1] = stamp.slice(0, 8);
+      c[6] = pick(['PROTESTER', 'MILITARY', 'POLICE', 'REBEL', 'GOVERNMENT', '']); c[16] = pick(['CIVILIAN', 'MILITARY', '']);
+      c[25] = '1'; c[26] = code; c[27] = code.slice(0, 3); c[28] = code.slice(0, 2); c[30] = '-9'; c[31] = '4'; c[32] = '2'; c[33] = String(1 + Math.floor(rnd() * 8)); c[34] = (-4 - rnd() * 6).toFixed(2);
+      c[51] = '4'; c[52] = `Demo locality ${i}, ${hs.countries[0]}`; c[53] = 'XX';
+      c[56] = (hs.lat + (rnd() - 0.5) * 4).toFixed(4); c[57] = (hs.lon + (rnd() - 0.5) * 5).toFixed(4);
+      c[59] = stamp; c[60] = 'https://example.org/demo-event';
+      rows.push(c.join('\t'));
+    }
+  }
+  return rows.join('\n') + '\n';
+}
+
+// Minimal single-entry ZIP writer (deflate) matching what GDELT publishes.
+function zipOne(name, data) {
+  const comp = zlib.deflateRawSync(data);
+  const nameBuf = Buffer.from(name);
+  const crc = crc32(data);
+  const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(8, 8);
+  local.writeUInt32LE(crc, 14); local.writeUInt32LE(comp.length, 18); local.writeUInt32LE(data.length, 22); local.writeUInt16LE(nameBuf.length, 26);
+  const cd = Buffer.alloc(46); cd.writeUInt32LE(0x02014b50, 0); cd.writeUInt16LE(20, 4); cd.writeUInt16LE(20, 6); cd.writeUInt16LE(8, 10);
+  cd.writeUInt32LE(crc, 16); cd.writeUInt32LE(comp.length, 20); cd.writeUInt32LE(data.length, 24); cd.writeUInt16LE(nameBuf.length, 28); cd.writeUInt32LE(0, 42);
+  const cdOff = 30 + nameBuf.length + comp.length;
+  const eocd = Buffer.alloc(22); eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(1, 8); eocd.writeUInt16LE(1, 10);
+  eocd.writeUInt32LE(46 + nameBuf.length, 12); eocd.writeUInt32LE(cdOff, 16);
+  return Buffer.concat([local, nameBuf, comp, cd, nameBuf, eocd]);
+}
+function crc32(buf) {
+  let c = ~0;
+  for (const b of buf) { c ^= b; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1)); }
+  return ~c >>> 0;
+}
+
+// Fixed-width TLE lines with valid checksums, epoch = now.
+function tle(no, inc, raan, ecc, argp, ma, mm) {
+  const d = new Date(); const start = Date.UTC(d.getUTCFullYear(), 0, 0);
+  const doy = (Date.now() - start) / 86_400_000;
+  const yy = String(d.getUTCFullYear() % 100).padStart(2, '0');
+  const f = (v, w, p) => v.toFixed(p).padStart(w, ' ');
+  const n5 = String(no).padStart(5, '0');
+  const l1 = `1 ${n5}U 26001A   ${yy}${doy.toFixed(8).padStart(12, '0')}  .00000000  00000-0  00000-0 0  999`;
+  const l2 = `2 ${n5} ${f(inc, 8, 4)} ${f(raan, 8, 4)} ${String(Math.round(ecc * 1e7)).padStart(7, '0')} ${f(argp, 8, 4)} ${f(ma, 8, 4)} ${f(mm, 11, 8)}00001`;
+  const ck = (l) => String([...l].reduce((a, ch) => a + (ch === '-' ? 1 : /\d/.test(ch) ? +ch : 0), 0) % 10);
+  return [l1 + ck(l1), l2 + ck(l2)];
 }
 
 async function fetch(url) {
@@ -187,4 +288,4 @@ class WebSocket {
   send() {}
 }
 
-module.exports = { fetch, WebSocket, env: { AISSTREAM_API_KEY: 'demo', FIRMS_MAP_KEY: 'demo' } };
+module.exports = { fetch, WebSocket, env: { AISSTREAM_API_KEY: 'demo', FIRMS_MAP_KEY: 'demo', CLOUDFLARE_API_TOKEN: 'demo' }, zipOne, gdeltExport, tle };

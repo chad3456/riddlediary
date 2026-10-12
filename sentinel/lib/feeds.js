@@ -5,6 +5,7 @@
 
 const { CHOKEPOINTS, HOTSPOTS, MARKETS, CRYPTO } = require('./catalog');
 const { inBox } = require('./geo');
+const { eventsFeed } = require('./events');
 
 const UA = 'Mozilla/5.0 (SENTINEL OSINT dashboard; +https://github.com/)';
 
@@ -25,6 +26,7 @@ function makeHttp(fetchImpl) {
       }
     },
     async text(url, opts) { return (await get(url, opts)).text(); },
+    async buffer(url, opts) { return Buffer.from(await (await get(url, opts)).arrayBuffer()); },
   };
 }
 
@@ -33,6 +35,14 @@ const round = (v, d = 2) => (v === null ? null : Math.round(v * 10 ** d) / 10 **
 
 // ---------- Aviation (ADS-B Exchange-compatible community APIs) ----------
 
+// Unmanned aircraft that broadcast ADS-B (mostly in transit or on ISR orbits).
+const UAV_TYPES = /^(Q1|Q4|Q9|Q25|MQ1|MQ4|MQ9|RQ1|RQ4|RQ7|TB2|TB3|AKNC|HRON|HERN|H450|WK45|PRDT|REAP|GLHK|TRTN|SKYG|PRTE)/;
+const UAV_CALLS = /^(FORTE|TRITON|REAPER|REAPR|BLKCAT|GHAWK|SKYGRD)/;
+function isUav(ac) {
+  // Callsign alone only counts when no type is reported (avoids tagging e.g. FORTE-callsign support aircraft).
+  return UAV_TYPES.test(ac.t || '') || (!ac.t && UAV_CALLS.test((ac.flight || '').trim())) || ac.category === 'B6';
+}
+
 function normAircraft(ac, src, mil) {
   if (ac.lat === undefined || ac.lon === undefined) return null;
   const alt = ac.alt_baro === 'ground' ? 0 : num(ac.alt_baro ?? ac.alt_geom);
@@ -40,6 +50,10 @@ function normAircraft(ac, src, mil) {
     id: ac.hex, cs: (ac.flight || '').trim() || null, lat: round(ac.lat, 4), lon: round(ac.lon, 4),
     alt, spd: num(ac.gs), hdg: num(ac.track ?? ac.true_heading), type: ac.t || null, reg: ac.r || null,
     sq: ac.squawk || null, mil: mil || (ac.dbFlags & 1) === 1, src,
+    // Navigation accuracy: NACp < 8 on an aircraft that reports it is the
+    // gpsjam.org-style signal for GNSS jamming/spoofing in the area.
+    nacp: num(ac.nac_p), nic: num(ac.nic), gpsLost: ac.gpsOkBefore !== undefined,
+    uav: isUav(ac),
   };
 }
 
@@ -252,7 +266,7 @@ function gdeltFeed() {
   for (const e of entities) for (const mode of ['timelinevolraw', 'timelinetone', 'artlist']) tasks.push({ ...e, mode });
   let cursor = 0;
   return {
-    id: 'gdelt', name: 'Global news intelligence (volume, tone, headlines)', category: 'Intel', interval: 6_000,
+    id: 'gdelt', name: 'Global news intelligence (volume, tone, headlines)', category: 'Intel', interval: 7_000,
     source: 'GDELT 2.0 DOC API', rolling: true,
     async run(http, prev) {
       const t = tasks[cursor++ % tasks.length];
@@ -387,12 +401,88 @@ function advisoriesFeed() {
   };
 }
 
+// ---------- Overhead: reconnaissance & earth-observation satellites ----------
+
+const SAT_GROUPS = [['military', 'Military'], ['resource', 'Earth observation'], ['radar', 'Radar calibration'], ['gnss', 'GNSS']];
+
+function satellitesFeed() {
+  let i = 0; const acc = {};
+  return {
+    id: 'satellites', name: 'Military & EO satellites (TLE)', category: 'Space', interval: 90_000, source: 'CelesTrak',
+    async run(http, prev) {
+      // One group per run, each group refreshed ~every 6 min at start then
+      // slowed: CelesTrak asks clients not to re-download unchanged data often.
+      const [g, label] = SAT_GROUPS[i++ % SAT_GROUPS.length];
+      const age = acc[g]?.ts ? Date.now() - acc[g].ts : Infinity;
+      if (age > 4 * 3_600_000) {
+        const txt = await http.text(`https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`, { timeout: 40000 });
+        const lines = txt.split(/\r?\n/).map((l) => l.trimEnd()).filter(Boolean);
+        const sats = [];
+        for (let k = 0; k + 2 < lines.length + 1; k += 3) {
+          if (lines[k + 1]?.startsWith('1 ') && lines[k + 2]?.startsWith('2 ')) sats.push({ name: lines[k].trim(), l1: lines[k + 1], l2: lines[k + 2], group: label });
+        }
+        if (!sats.length) throw new Error(`CelesTrak returned no TLEs for ${g}`);
+        acc[g] = { ts: Date.now(), sats };
+      }
+      return Object.values(acc).flatMap((x) => x.sats);
+    },
+  };
+}
+
+// ---------- Internet outages with cause (Cloudflare Radar, optional token) ----------
+
+function cloudflareOutagesFeed(token) {
+  return {
+    id: 'cf_outages', name: 'Internet outages with cause', category: 'Cyber & Infra', interval: 900_000,
+    source: 'Cloudflare Radar', needsKey: 'CLOUDFLARE_API_TOKEN', disabled: !token,
+    async run(http) {
+      const j = await http.json('https://api.cloudflare.com/client/v4/radar/annotations/outages?dateRange=7d&limit=200&format=json',
+        { headers: { Authorization: `Bearer ${token}` } });
+      return (j.result?.annotations || []).map((a) => ({
+        id: a.id, start: a.startDate, end: a.endDate || null, ongoing: !a.endDate,
+        cause: a.outage?.outageCause || null, type: a.outage?.outageType || null, scope: a.scope || null,
+        description: a.description || null, url: a.linkedUrl || null,
+        countries: (a.locationsDetails || []).map((l) => ({ code: l.code, name: l.name })).concat((a.locations || []).filter((c) => !(a.locationsDetails || []).some((l) => l.code === c)).map((c) => ({ code: c, name: c }))),
+      }));
+    },
+  };
+}
+
+// ---------- News-geolocated activity heat (GDELT GEO 2.0) ----------
+
+const GEO_TOPICS = [
+  ['drone', '(drone OR UAV OR "unmanned aerial" OR Shahed OR quadcopter) (attack OR strike OR intercepted OR "shot down" OR sighting OR swarm)'],
+  ['protest', '(protest OR protesters OR demonstration OR "tear gas" OR riot)'],
+  ['shutdown', '("internet shutdown" OR "internet blackout" OR "network outage" OR "mobile data" cut OR "connectivity disrupted")'],
+  ['cyber', '(cyberattack OR ransomware OR "DDoS" OR hacktivist OR "data breach")'],
+  ['jamming', '("GPS jamming" OR "GPS spoofing" OR "GNSS interference" OR "electronic warfare")'],
+];
+
+function geoHeatFeed() {
+  let i = 0;
+  return {
+    id: 'gdelt_geo', name: 'Geolocated reporting: drones, protests, shutdowns, cyber, jamming', category: 'Events', interval: 30_000,
+    source: 'GDELT GEO 2.0 API', rolling: true,
+    async run(http, prev) {
+      const [topic, q] = GEO_TOPICS[i++ % GEO_TOPICS.length];
+      const j = await http.json(`https://api.gdeltproject.org/api/v2/geo/geo?query=${encodeURIComponent(q)}&mode=PointData&format=GeoJSON&timespan=24h&maxpoints=300`);
+      const pts = (j.features || []).filter((f) => f.geometry?.type === 'Point').map((f) => {
+        const p = f.properties || {};
+        const link = /href="([^"]+)"/.exec(p.html || '')?.[1] || null;
+        const title = /title="([^"]+)"/.exec(p.html || '')?.[1] || />([^<]{8,})</.exec(p.html || '')?.[1] || null;
+        return { topic, name: p.name, count: num(p.count) || 1, lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], url: link, title };
+      });
+      return { ...(prev || {}), [topic]: { ts: Date.now(), points: pts } };
+    },
+  };
+}
+
 function buildFeeds(env = process.env) {
   return [
     militaryAircraftFeed(), airDensityFeed(), quakesFeed(), eonetFeed(), gdacsFeed(), firmsFeed(env.FIRMS_MAP_KEY),
     seaStateFeed(), digitrafficFeed(), gdeltFeed(), marketsFeed(), cryptoFeed(), spaceWeatherFeed(), kevFeed(),
-    iodaFeed(), advisoriesFeed(),
+    iodaFeed(), advisoriesFeed(), eventsFeed(), geoHeatFeed(), satellitesFeed(), cloudflareOutagesFeed(env.CLOUDFLARE_API_TOKEN),
   ];
 }
 
-module.exports = { buildFeeds, makeHttp, summarizeTimeline, gdeltDate, normAircraft };
+module.exports = { buildFeeds, makeHttp, summarizeTimeline, gdeltDate, normAircraft, isUav, GEO_TOPICS };

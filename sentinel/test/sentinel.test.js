@@ -88,3 +88,40 @@ test('a failing source is isolated and reported', async () => {
   assert.match(h.lastError, /503/);
   assert.ok(feed('gdelt'));
 });
+
+test('GDELT event export: zip round-trip, CAMEO classes and geo filtering', () => {
+  const { unzipFirst, parseExport, classify } = require('../lib/events');
+  assert.strictEqual(classify('1411'), 'protest');
+  assert.strictEqual(classify('145'), 'riot');
+  assert.strictEqual(classify('195'), 'aerial');
+  assert.strictEqual(classify('193'), 'clash');
+  assert.strictEqual(classify('202'), 'mass');
+  assert.strictEqual(classify('042'), null);
+  const csv = demo.gdeltExport('20261012150000');
+  const back = unzipFirst(demo.zipOne('x.export.CSV', Buffer.from(csv))).toString('utf8');
+  assert.strictEqual(back, csv);
+  const rows = parseExport(back);
+  assert.ok(rows.length > 0 && rows.every((r) => r.kind && Number.isFinite(r.lat)));
+  const countryOnly = csv.split('\n')[0].split('\t'); countryOnly[51] = '1';
+  assert.strictEqual(parseExport(countryOnly.join('\t')).length, 0, 'country-centroid events are dropped');
+});
+
+test('UAV detection by type, and callsign only when type is missing', () => {
+  const { isUav } = require('../lib/feeds');
+  assert.ok(isUav({ t: 'Q4' }));
+  assert.ok(isUav({ t: 'MQ9' }));
+  assert.ok(isUav({ flight: 'FORTE11 ' }));
+  assert.ok(!isUav({ t: 'C17', flight: 'FORTE11' }));
+  assert.ok(!isUav({ t: 'B738' }));
+});
+
+test('live-activity fusion: unrest + outage raises a shutdown insight', async () => {
+  const e = new Engine({ fetchImpl: demo.fetch, WebSocketImpl: null, env: demo.env, demo: true });
+  for (const id of ['gdelt_events', 'cf_outages', 'ioda']) { const f = e.feeds.find((x) => x.id === id); for (let i = 0; i < 6; i++) await e.runFeed(f); }
+  e.dirty = true; e.flush();
+  const s = e.summary();
+  assert.ok(s.insights.some((i) => i.kind === 'Fusion' && /Iran/.test(i.title)), s.insights.map((i) => i.title).join(' | '));
+  const act = e.layer('activity');
+  assert.ok(act.events.length > 0 && act.outages.some((o) => o.code === 'IR' && o.ongoing));
+  assert.ok(e.result.parameters.length >= 1000);
+});

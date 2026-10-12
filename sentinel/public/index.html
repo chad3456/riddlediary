@@ -43,14 +43,35 @@
     </aside>
 
     <div class="mapwrap">
-      <div id="map"></div>
+      <div class="viewport" id="viewport">
+        <div id="map"></div>
+        <div id="globe" hidden></div>
+      </div>
+      <div class="fx-overlay" id="fxOverlay" aria-hidden="true"></div>
+      <div class="hud" aria-hidden="true">
+        <div class="hud-corner tl"></div><div class="hud-corner tr"></div><div class="hud-corner bl"></div><div class="hud-corner br"></div>
+        <div class="hud-reticle"><span></span></div>
+        <div class="hud-tl"><span class="rec">● REC</span> <span id="hudMode">STANDARD EO</span><br><span class="dim">SENTINEL // OSINT FUSION // UNCLASSIFIED</span></div>
+        <div class="hud-tr"><span id="hudTime">—</span><br><span class="dim" id="hudAlt">—</span></div>
+        <div class="hud-bl"><span class="dim">CURSOR</span> <span id="hudCursor">—</span></div>
+        <div class="hud-br"><span class="dim">SRC</span> PUBLIC OPEN SOURCES ONLY</div>
+      </div>
+      <div class="viewctl">
+        <div class="seg"><button data-view="globe">3D GLOBE</button><button data-view="map">2D MAP</button></div>
+        <label class="fxpick"><span>MODE</span><select id="fxSel" aria-label="Visual mode"></select></label>
+        <select id="texSel" aria-label="Globe imagery"><option value="night">Night lights</option><option value="marble">Blue marble</option><option value="dark">Dark</option><option value="day">Day</option></select>
+        <button id="rotBtn" class="tbtn" title="Auto-rotate">⟳</button>
+        <button id="hudBtn" class="tbtn on" title="Toggle HUD">HUD</button>
+      </div>
       <div class="hover-card" id="hoverCard" hidden></div>
+      <div class="toast" id="toast" hidden></div>
       <button class="rail-toggle" id="railToggle" aria-label="Toggle layers panel">☰</button>
     </div>
 
     <aside class="panel" id="panel">
       <nav class="tabs" id="tabs" role="tablist">
         <button data-tab="brief" class="on">Brief</button>
+        <button data-tab="live">Live</button>
         <button data-tab="choke">Chokepoints</button>
         <button data-tab="theatres">Theatres</button>
         <button data-tab="markets">Markets</button>
@@ -66,6 +87,10 @@
   <footer class="ticker"><div class="ticker-track" id="ticker"></div></footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.46.2/dist/globe.gl.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/satellite.js@6.0.2/dist/satellite.min.js"></script>
+  <script src="fx.js"></script>
+  <script src="globe.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

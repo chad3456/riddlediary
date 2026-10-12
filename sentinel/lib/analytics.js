@@ -57,6 +57,11 @@ function analyze(state, history = {}) {
   const adv = f.advisories || {};
   const ioda = f.ioda || {};
   const ships = state.ships || [];
+  const events = f.gdelt_events || [];
+  const geo = f.gdelt_geo || {};
+  const cfOut = f.cf_outages || [];
+  const geoPts = (topic) => geo[topic]?.points || [];
+  const evCount = (list, kind) => list.filter((e) => e.kind === kind).length;
 
   const newsStats = (key) => {
     const n = news[key] || {};
@@ -112,7 +117,25 @@ function analyze(state, history = {}) {
     P({ ...E, group: g, key: 'hazards', label: 'Active hazard alerts nearby', value: f.gdacs || f.eonet ? hz : null, source: 'GDACS/EONET' });
     P({ ...E, group: g, key: 'oil_ref', label: 'Oil flow (reference baseline)', value: cp.oilMbd, unit: 'mb/d', source: 'EIA (reference)' });
 
+    // GNSS interference: aircraft reporting degraded navigation accuracy.
+    const nav = (air || []).filter((a) => a.nacp !== null && a.nacp !== undefined);
+    const degraded = nav.filter((a) => a.nacp < 8 || a.gpsLost);
+    const gnssShare = nav.length >= 5 ? degraded.length / nav.length : null;
+    const evNear = events.filter((e) => haversineKm(e.lat, e.lon, cp.lat, cp.lon) <= cp.radiusKm * 2);
+    const kinetic = evCount(evNear, 'aerial') + evCount(evNear, 'clash');
+    const uavNear = milNear.filter((a) => a.uav);
+    P({ ...E, group: g, key: 'gnss_reporting', label: 'Aircraft reporting nav accuracy', value: air ? nav.length : null, source: 'ADS-B' });
+    P({ ...E, group: g, key: 'gnss_degraded', label: 'GNSS interference (aircraft with NACp<8)', value: gnssShare === null ? null : Math.round(gnssShare * 100), unit: '%', source: 'ADS-B (gpsjam method)',
+      status: gnssShare === null ? null : gnssShare >= 0.3 ? 'serious' : gnssShare >= 0.1 ? 'warning' : 'good' });
+    P({ ...E, group: g, key: 'kinetic', label: 'Airstrike / armed-clash events nearby (24h)', value: f.gdelt_events ? kinetic : null, source: 'GDELT events',
+      status: !f.gdelt_events ? null : kinetic >= 10 ? 'serious' : kinetic >= 3 ? 'warning' : 'good' });
+    P({ ...E, group: g, key: 'unrest', label: 'Protest / riot events nearby (24h)', value: f.gdelt_events ? evCount(evNear, 'protest') + evCount(evNear, 'riot') : null, source: 'GDELT events' });
+    P({ ...E, group: g, key: 'uav', label: 'UAVs broadcasting nearby', value: f.mil_air ? uavNear.length : null, source: 'ADS-B',
+      status: !f.mil_air ? null : uavNear.length ? 'warning' : 'good' });
+
     const risk = composite([
+      { name: 'Kinetic events nearby', weight: 10, value: f.gdelt_events ? clamp01(kinetic / 12) : null },
+      { name: 'GNSS interference', weight: 10, value: gnssShare === null ? null : clamp01(gnssShare / 0.4) },
       { name: 'News surge', weight: 25, value: ns.surge == null ? null : clamp01((ns.surge - 1) / 2) },
       { name: 'Negative tone', weight: 20, value: ns.tone == null ? null : clamp01((-ns.tone - 1.5) / 6) },
       { name: 'Military air activity', weight: 20, value: f.mil_air ? clamp01(milNear.length / 6) : null },
@@ -133,12 +156,19 @@ function analyze(state, history = {}) {
     if (slowShare !== null && vs.length >= 15 && slowShare >= 0.6) I({ ...loc, id: `cp-stop-${cp.id}`, sev: slowShare >= 0.75 ? 3 : 2, kind: 'Maritime',
       title: `${Math.round(slowShare * 100)}% of vessels at ${cp.name} are stopped`,
       detail: `${stationary} of ${vs.length} AIS contacts below 1 kn — possible queueing, anchorage build-up or transit disruption.` });
+    if (gnssShare !== null && nav.length >= 8 && gnssShare >= 0.25) I({ ...loc, id: `cp-gnss-${cp.id}`, sev: gnssShare >= 0.5 ? 3 : 2, kind: 'EW',
+      title: `GNSS interference likely around ${cp.name} (${Math.round(gnssShare * 100)}% of aircraft degraded)`,
+      detail: `${degraded.length} of ${nav.length} aircraft report NACp below 8 or lost GPS — consistent with jamming or spoofing. Ships in the area may see the same; a geomagnetic storm can also degrade GNSS.` });
+    if (uavNear.length) I({ ...loc, id: `cp-uav-${cp.id}`, sev: 2, kind: 'Drone',
+      title: `${uavNear.length} UAV${uavNear.length > 1 ? 's' : ''} broadcasting near ${cp.name}`, detail: uavNear.map((a) => `${a.cs || a.id} (${a.type || 'UAV'}) at ${a.alt ?? '?'} ft`).join(', ') });
+    if (kinetic >= 5) I({ ...loc, id: `cp-kin-${cp.id}`, sev: kinetic >= 12 ? 3 : 2, kind: 'Conflict',
+      title: `${kinetic} airstrike / clash events coded near ${cp.name} in 24h`, detail: topPlaces(evNear.filter((e) => e.kind === 'aerial' || e.kind === 'clash')) });
     if ((w.wave ?? 0) >= 3.5 || (w.gust ?? 0) >= 40) I({ ...loc, id: `cp-wx-${cp.id}`, sev: 2, kind: 'Weather',
       title: `Hazardous sea state at ${cp.name}`, detail: `Waves ${w.wave ?? '–'} m, gusts ${w.gust ?? '–'} kn, visibility ${w.vis != null ? r1(w.vis / 1000) : '–'} km.` });
     if (qNear.some((q) => q.mag >= 6)) I({ ...loc, id: `cp-eq-${cp.id}`, sev: 3, kind: 'Hazard',
       title: `Strong earthquake near ${cp.name}`, detail: qNear.map((q) => `M${q.mag} ${q.place}`).join('; ') });
 
-    return { ...cp, kind: 'chokepoint', ...risk, level: levelOf(risk.score), news: ns.articles.slice(0, 8),
+    return { ...cp, kind: 'chokepoint', ...risk, level: levelOf(risk.score), news: ns.articles.slice(0, 8), gnss: gnssShare, kinetic,
       newsVolSeries: ns.volSeries, toneSeries: ns.toneSeries, weather: w, vessels: vs.length, milNear: milNear.length,
       history: history[`cp:${cp.id}`] || [] };
   });
@@ -184,13 +214,42 @@ function analyze(state, history = {}) {
     P({ ...E, group: g, key: 'outages_crit', label: 'Critical outage alerts (24h)', value: f.ioda ? outCrit : null, source: 'IODA' });
     P({ ...E, group: g, key: 'vessels', label: 'Vessels in area (AIS coverage)', value: ships.length ? shipsIn : null, source: 'AIS' });
 
+    const gIn = events.filter((e) => inBox(e.lat, e.lon, hs.box));
+    const n = (k) => (f.gdelt_events ? evCount(gIn, k) : null);
+    const uavIn = milIn.filter((a) => a.uav);
+    const geoIn = (t) => (geo[t] ? geoPts(t).filter((p) => inBox(p.lat, p.lon, hs.box)).reduce((a, p) => a + p.count, 0) : null);
+    const cfIn = cfOut.filter((o) => o.ongoing && o.countries.some((c) => hs.iso.includes(c.code)));
+    const EV = 'GDELT events';
+    P({ ...E, group: g, key: 'protests', label: 'Protest events (24h)', value: n('protest'), source: EV,
+      status: n('protest') == null ? null : n('protest') >= 40 ? 'serious' : n('protest') >= 15 ? 'warning' : 'good' });
+    P({ ...E, group: g, key: 'riots', label: 'Riot / violent-protest events (24h)', value: n('riot'), source: EV,
+      status: n('riot') == null ? null : n('riot') >= 10 ? 'serious' : n('riot') >= 3 ? 'warning' : 'good' });
+    P({ ...E, group: g, key: 'aerial', label: 'Airstrike / drone-strike events (24h)', value: n('aerial'), source: EV,
+      status: n('aerial') == null ? null : n('aerial') >= 10 ? 'critical' : n('aerial') >= 3 ? 'serious' : 'good' });
+    P({ ...E, group: g, key: 'clashes', label: 'Armed-clash events (24h)', value: n('clash'), source: EV,
+      status: n('clash') == null ? null : n('clash') >= 20 ? 'serious' : n('clash') >= 5 ? 'warning' : 'good' });
+    P({ ...E, group: g, key: 'mass_violence', label: 'Mass-violence events (24h)', value: n('mass'), source: EV,
+      status: n('mass') == null ? null : n('mass') >= 1 ? 'critical' : 'good' });
+    P({ ...E, group: g, key: 'uav', label: 'UAVs broadcasting in area', value: f.mil_air ? uavIn.length : null, source: 'ADS-B' });
+    P({ ...E, group: g, key: 'drone_reports', label: 'Geolocated drone reports (24h)', value: geoIn('drone'), source: 'GDELT GEO',
+      status: geoIn('drone') == null ? null : geoIn('drone') >= 20 ? 'serious' : geoIn('drone') >= 5 ? 'warning' : 'good' });
+    P({ ...E, group: g, key: 'shutdown_reports', label: 'Geolocated shutdown reports (24h)', value: geoIn('shutdown'), source: 'GDELT GEO' });
+    P({ ...E, group: g, key: 'jamming_reports', label: 'Geolocated GPS-jamming reports (24h)', value: geoIn('jamming'), source: 'GDELT GEO' });
+    P({ ...E, group: g, key: 'cf_outages', label: 'Ongoing outages (Cloudflare)', value: f.cf_outages ? cfIn.length : null, source: 'Cloudflare Radar',
+      status: !f.cf_outages ? null : cfIn.length ? 'serious' : 'good' });
+    const violence = (n('aerial') ?? 0) * 2 + (n('clash') ?? 0) + (n('mass') ?? 0) * 4;
+    const unrest = (n('protest') ?? 0) + (n('riot') ?? 0) * 3;
+
     const risk = composite([
+      { name: 'Armed violence events', weight: 15, value: f.gdelt_events ? clamp01(violence / 30) : null },
+      { name: 'Civil unrest', weight: 10, value: f.gdelt_events ? clamp01(unrest / 50) : null },
+      { name: 'Drone activity', weight: 10, value: f.gdelt_geo || f.mil_air ? clamp01(((geoIn('drone') ?? 0) + uavIn.length * 5) / 20) : null },
       { name: 'News surge', weight: 20, value: ns.surge == null ? null : clamp01((ns.surge - 1) / 2) },
       { name: 'Negative tone', weight: 20, value: ns.tone == null ? null : clamp01((-ns.tone - 2) / 6) },
       { name: 'Military air activity', weight: 15, value: f.mil_air ? clamp01(milIn.length / 10) : null },
       { name: 'Thermal anomalies', weight: 10, value: f.firms ? clamp01(fIn.length / 200) : null },
       { name: 'Travel advisory', weight: 15, value: advLevel == null ? null : (advLevel - 1) / 3 },
-      { name: 'Internet outages', weight: 10, value: f.ioda ? clamp01((outAlerts + outCrit * 2) / 8) : null },
+      { name: 'Internet outages', weight: 10, value: f.ioda || f.cf_outages ? clamp01((outAlerts + outCrit * 2 + cfIn.length * 4) / 8) : null },
       { name: 'Natural hazards', weight: 10, value: f.quakes || f.gdacs ? clamp01((qIn.filter((q) => q.mag >= 5).length + gdIn.filter((x) => x.level !== 'Green').length) / 3) : null },
     ]);
     P({ ...E, group: g, key: 'risk', label: 'Composite risk score', value: risk.score, unit: '/100', source: 'SENTINEL model', status: levelOf(risk.score).status });
@@ -205,11 +264,20 @@ function analyze(state, history = {}) {
       detail: milIn.filter(isIsr).map((a) => `${a.cs || a.id} (${a.type})`).slice(0, 6).join(', ') });
     if (outCrit > 0) I({ ...loc, id: `hs-net-${hs.id}`, sev: 3, kind: 'Cyber',
       title: `${hs.name}: critical internet disruption detected`, detail: outs.map((o) => `${o.name}: ${o.critical} critical / ${o.alerts} alerts via ${o.sources.join(', ')}`).join('; ') });
+    if ((n('aerial') ?? 0) >= 5) I({ ...loc, id: `hs-air-${hs.id}`, sev: n('aerial') >= 15 ? 4 : 3, kind: 'Conflict',
+      title: `${hs.name}: ${n('aerial')} airstrike / drone-strike events coded in 24h`, detail: topPlaces(gIn.filter((e) => e.kind === 'aerial')) });
+    if ((n('riot') ?? 0) >= 5 || (n('protest') ?? 0) >= 30) I({ ...loc, id: `hs-unrest-${hs.id}`, sev: (n('riot') ?? 0) >= 12 ? 3 : 2, kind: 'Unrest',
+      title: `${hs.name}: ${n('protest')} protest and ${n('riot')} riot events in 24h`, detail: topPlaces(gIn.filter((e) => e.kind === 'protest' || e.kind === 'riot')) });
+    if (uavIn.length) I({ ...loc, id: `hs-uav-${hs.id}`, sev: 2, kind: 'Drone',
+      title: `${hs.name}: ${uavIn.length} UAV${uavIn.length > 1 ? 's' : ''} broadcasting ADS-B`, detail: uavIn.map((a) => `${a.cs || a.id} (${a.type || 'UAV'})`).join(', ') });
+    if ((geoIn('drone') ?? 0) >= 10) I({ ...loc, id: `hs-dronenews-${hs.id}`, sev: 2, kind: 'Drone',
+      title: `${hs.name}: ${geoIn('drone')} geolocated drone reports in 24h`, detail: geoPts('drone').filter((p) => inBox(p.lat, p.lon, hs.box)).sort((a, b) => b.count - a.count).slice(0, 4).map((p) => `${p.name} (${p.count})`).join('; ') });
     if (fIn.length >= 100) I({ ...loc, id: `hs-fire-${hs.id}`, sev: 2, kind: 'Hazard',
       title: `${hs.name}: ${fIn.length} thermal anomalies in 24h`, detail: `Total FRP ${Math.round(frp)} MW. Clusters can indicate shelling, strikes on fuel/infrastructure, or wildfire — corroborate before attributing.` });
 
     return { ...hs, kind: 'hotspot', ...risk, level: levelOf(risk.score), news: ns.articles.slice(0, 8),
       newsVolSeries: ns.volSeries, toneSeries: ns.toneSeries, milIn: milIn.length, fires: fIn.length, advisory: advLevel,
+      protests: n('protest'), riots: n('riot'), aerial: n('aerial'), clashes: n('clash'), uav: uavIn.length,
       history: history[`hs:${hs.id}`] || [] };
   });
 
@@ -284,6 +352,58 @@ function analyze(state, history = {}) {
   for (const a of emergencies(mil, density)) I({ entity: 'global', entityName: a.cs || a.id, lat: a.lat, lon: a.lon, id: `sq-${a.id}`, sev: a.sq === '7500' ? 4 : 3, kind: 'Air',
     title: `Squawk ${a.sq} — ${a.cs || a.id} (${a.type || 'unknown type'})`, detail: `${a.sq === '7500' ? 'Unlawful interference' : a.sq === '7600' ? 'Radio failure' : 'General emergency'} at ${a.alt ?? '?'} ft.` });
 
+  // ---- Live activity: unrest, kinetic events, drones, EW, outages ----
+  const EVG = 'Live activity';
+  for (const [k, lbl] of [['protest', 'Protest events'], ['riot', 'Riot events'], ['aerial', 'Airstrike / drone-strike events'], ['clash', 'Armed-clash events'], ['mass', 'Mass-violence events']])
+    G({ group: EVG, key: `ev_${k}`, label: `${lbl} worldwide (24h)`, value: f.gdelt_events ? evCount(events, k) : null, source: 'GDELT events' });
+  const byCountry = {};
+  for (const e of events) {
+    const c = byCountry[e.country] || (byCountry[e.country] = { country: e.country, protest: 0, riot: 0, aerial: 0, clash: 0, mass: 0, ev: [] });
+    c[e.kind]++; c.ev.push(e);
+  }
+  const countries = Object.values(byCountry);
+  for (const c of countries.sort((a, b) => (b.protest + b.riot) - (a.protest + a.riot)).slice(0, 12))
+    G({ group: `${EVG} · unrest by country`, key: `unrest_${c.country}`, label: `${c.country}: protest + riot events`, value: c.protest + c.riot, source: 'GDELT events',
+      status: c.riot >= 10 ? 'serious' : c.protest + c.riot >= 30 ? 'warning' : null });
+  for (const c of countries.sort((a, b) => (b.aerial + b.clash) - (a.aerial + a.clash)).slice(0, 12))
+    G({ group: `${EVG} · kinetic by country`, key: `kinetic_${c.country}`, label: `${c.country}: airstrike + clash events`, value: c.aerial + c.clash, source: 'GDELT events',
+      status: c.aerial >= 10 ? 'critical' : c.aerial + c.clash >= 10 ? 'serious' : null });
+  for (const [t] of require('./feeds').GEO_TOPICS)
+    G({ group: EVG, key: `geo_${t}`, label: `Geolocated ${t} reports (24h)`, value: geo[t] ? geoPts(t).reduce((a, p) => a + p.count, 0) : null, source: 'GDELT GEO' });
+  const uavs = mil.filter((a) => a.uav);
+  G({ group: EVG, key: 'uav_airborne', label: 'UAVs broadcasting ADS-B (global)', value: f.mil_air ? uavs.length : null, source: 'ADS-B' });
+  const allAir = [...mil, ...Object.values(density).flatMap((d) => d.aircraft || [])];
+  const navAll = allAir.filter((a) => a.nacp !== null && a.nacp !== undefined);
+  G({ group: EVG, key: 'gnss_degraded', label: 'Aircraft with degraded GNSS (NACp<8)', value: navAll.length ? navAll.filter((a) => a.nacp < 8 || a.gpsLost).length : null, source: 'ADS-B' });
+  G({ group: EVG, key: 'cf_ongoing', label: 'Ongoing internet outages (Cloudflare)', value: f.cf_outages ? cfOut.filter((o) => o.ongoing).length : null, source: 'Cloudflare Radar' });
+  G({ group: EVG, key: 'cf_gov', label: 'Government-directed shutdowns (7d)', value: f.cf_outages ? cfOut.filter((o) => /government/i.test(o.cause || '')).length : null, source: 'Cloudflare Radar',
+    status: !f.cf_outages ? null : cfOut.some((o) => o.ongoing && /government/i.test(o.cause || '')) ? 'critical' : 'good' });
+  const sats = f.satellites || [];
+  for (const grp of ['Military', 'Earth observation', 'Radar calibration', 'GNSS'])
+    G({ group: 'Space · overhead', key: `sats_${grp}`, label: `Satellites tracked: ${grp}`, value: f.satellites ? sats.filter((x) => x.group === grp).length : null, source: 'CelesTrak' });
+
+  for (const c of countries) {
+    const loc = c.ev[0] ? { lat: c.ev[0].lat, lon: c.ev[0].lon } : {};
+    if (c.riot >= 8 || c.protest >= 40) I({ entity: 'global', entityName: c.country, ...loc, id: `unrest-${c.country}`, sev: c.riot >= 20 ? 3 : 2, kind: 'Unrest',
+      title: `Unrest in ${c.country}: ${c.protest} protest / ${c.riot} riot events (24h)`, detail: topPlaces(c.ev.filter((e) => e.kind === 'protest' || e.kind === 'riot')) });
+    if (c.aerial >= 8) I({ entity: 'global', entityName: c.country, ...loc, id: `aerial-${c.country}`, sev: c.aerial >= 20 ? 4 : 3, kind: 'Conflict',
+      title: `${c.aerial} airstrike / drone-strike events coded in ${c.country} (24h)`, detail: topPlaces(c.ev.filter((e) => e.kind === 'aerial')) });
+  }
+  // Fusion rule: a network outage coinciding with street unrest is the classic
+  // signature of a government-ordered shutdown.
+  const outageCountries = new Map();
+  for (const o of Object.values(ioda)) if (o.critical || o.alerts >= 2) outageCountries.set(o.name.toLowerCase(), { name: o.name, src: `IODA ${o.critical} critical / ${o.alerts} alerts` });
+  for (const o of cfOut.filter((x) => x.ongoing)) for (const c of o.countries) outageCountries.set(String(c.name).toLowerCase(), { name: c.name, src: `Cloudflare: ${o.cause || 'outage'}` });
+  for (const [k, o] of outageCountries) {
+    const c = byCountry[o.name] || countries.find((x) => x.country.toLowerCase() === k);
+    if (c && c.protest + c.riot >= 5) I({ entity: 'global', entityName: o.name, lat: c.ev[0].lat, lon: c.ev[0].lon, id: `shutdown-${k}`, sev: 4, kind: 'Fusion',
+      title: `${o.name}: internet disruption during active unrest`, detail: `${o.src} while ${c.protest + c.riot} protest/riot events were coded in 24h. Pattern consistent with a government-directed shutdown — corroborate.` });
+  }
+  for (const o of cfOut.filter((x) => x.ongoing && /government/i.test(x.cause || ''))) I({ entity: 'global', entityName: o.countries.map((c) => c.name).join(', '), id: `cf-${o.id}`, sev: 3, kind: 'Cyber',
+    title: `Government-directed internet shutdown: ${o.countries.map((c) => c.name).join(', ')}`, detail: `${o.description || ''} Since ${o.start?.slice(0, 16)}Z (${o.scope || 'national'}).` });
+  if (uavs.length) I({ entity: 'global', entityName: 'UAVs', id: 'uav-global', sev: 1, kind: 'Drone',
+    title: `${uavs.length} UAVs broadcasting ADS-B worldwide`, detail: uavs.slice(0, 8).map((a) => `${a.cs || a.id} (${a.type || 'UAV'})`).join(', ') });
+
   G({ group: 'Maritime', key: 'ships_total', label: 'Vessels tracked (all AIS sources)', value: ships.length || null, source: 'AIS' });
   G({ group: 'Maritime', key: 'ships_underway', label: 'Vessels underway', value: ships.length ? ships.filter((s) => (s.sog ?? 0) >= 1).length : null, source: 'AIS' });
   for (const c of ['tanker', 'cargo', 'passenger', 'military', 'fishing'])
@@ -308,6 +428,13 @@ function analyze(state, history = {}) {
 
   insights.sort((a, b) => b.sev - a.sev || a.title.localeCompare(b.title));
   return { parameters: params, chokepoints, hotspots, insights, gti };
+}
+
+function topPlaces(list) {
+  const by = {};
+  for (const e of list) { const k = e.place.split(', ').slice(0, 2).join(', '); by[k] = (by[k] || 0) + 1; }
+  const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${k} (${v})`).join('; ');
+  return `${top}. Machine-coded from news by GDELT — counts reflect reporting, not verified incidents.`;
 }
 
 function isIsr(a) {

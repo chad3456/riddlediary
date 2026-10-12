@@ -8,6 +8,7 @@ const { buildFeeds, makeHttp } = require('./feeds');
 const { AisStream } = require('./ais');
 const { analyze } = require('./analytics');
 const { MARKETS, CHOKEPOINTS } = require('./catalog');
+const { centroid } = require('./countries');
 
 const HISTORY_EVERY = 5 * 60_000;
 const HISTORY_LEN = 288; // 24h of 5-minute points
@@ -27,7 +28,7 @@ class Engine extends EventEmitter {
       count: 0, latencyMs: null, runs: 0, failures: 0,
     }]));
     this.ais = new AisStream({ key: env.AISSTREAM_API_KEY, WebSocketImpl, onChange: () => this.touch('ships') });
-    this.versions = { summary: 0, air: 0, ships: 0, hazards: 0, params: 0 };
+    this.versions = { summary: 0, air: 0, ships: 0, hazards: 0, params: 0, activity: 0, sats: 0 };
     this.history = {}; this.gtiHistory = [];
     this.result = analyze(this.state, this.history);
     this.timers = [];
@@ -113,6 +114,9 @@ class Engine extends EventEmitter {
         parameters: r.parameters.length, liveParameters: r.parameters.filter((p) => p.value !== null && p.value !== undefined).length,
         milAircraft: (f.mil_air || []).length, aircraft: this.airLayer().length, ships: this.state.ships.length,
         quakes: (f.quakes || []).length, events: (f.eonet || []).length + (f.gdacs || []).length, fires: (f.firms || []).length,
+        protests: (f.gdelt_events || []).filter((e) => e.kind === 'protest' || e.kind === 'riot').length,
+        kinetic: (f.gdelt_events || []).filter((e) => e.kind === 'aerial' || e.kind === 'clash' || e.kind === 'mass').length,
+        uav: (f.mil_air || []).filter((a) => a.uav).length, satellites: (f.satellites || []).length, outages: this.outageLayer().length,
         insights: r.insights.length, sourcesOnline: health.filter((h) => h.ok).length, sources: health.length,
       },
       health,
@@ -124,6 +128,26 @@ class Engine extends EventEmitter {
     };
   }
 
+  // Country-level outages from IODA and Cloudflare, merged and placed at centroids.
+  outageLayer() {
+    const out = new Map();
+    for (const o of Object.values(this.state.feeds.ioda || {})) {
+      const c = centroid(o.code); if (!c) continue;
+      out.set(o.code, { code: o.code, name: o.name, lat: c.lat, lon: c.lon, alerts: o.alerts, critical: o.critical, sources: o.sources, causes: [], ongoing: false });
+    }
+    for (const a of this.state.feeds.cf_outages || []) {
+      for (const k of a.countries) {
+        const c = centroid(k.code); if (!c) continue;
+        const e = out.get(k.code) || { code: k.code, name: c.name, lat: c.lat, lon: c.lon, alerts: 0, critical: 0, sources: [], causes: [], ongoing: false };
+        e.causes.push({ cause: a.cause, type: a.type, start: a.start, end: a.end, description: a.description, url: a.url });
+        e.ongoing = e.ongoing || a.ongoing;
+        if (!e.sources.includes('cloudflare')) e.sources.push('cloudflare');
+        out.set(k.code, e);
+      }
+    }
+    return [...out.values()];
+  }
+
   airLayer() {
     const out = new Map();
     for (const d of Object.values(this.state.feeds.air_density || {})) for (const a of d.aircraft || []) out.set(a.id, a);
@@ -133,7 +157,14 @@ class Engine extends EventEmitter {
 
   layer(name) {
     const f = this.state.feeds;
-    if (name === 'air') return this.airLayer().map((a) => [a.id, a.lat, a.lon, a.hdg, a.alt, a.spd, a.cs, a.type, a.reg, a.mil ? 1 : 0, a.sq, a.src]);
+    if (name === 'air') return this.airLayer().map((a) => [a.id, a.lat, a.lon, a.hdg, a.alt, a.spd, a.cs, a.type, a.reg, a.mil ? 1 : 0, a.sq, a.src,
+      a.nacp ?? null, a.uav ? 1 : 0, a.gpsLost ? 1 : 0]);
+    if (name === 'activity') return {
+      events: (f.gdelt_events || []).map((e) => [e.id, e.kind, e.lat, e.lon, e.place, e.code, e.actor1, e.actor2, e.articles, e.tone, e.ts, e.url, e.precise ? 1 : 0]),
+      geo: Object.fromEntries(Object.entries(f.gdelt_geo || {}).map(([k, v]) => [k, v.points])),
+      outages: this.outageLayer(),
+    };
+    if (name === 'sats') return f.satellites || [];
     if (name === 'ships') return this.state.ships.map((s) => [s.id, s.lat, s.lon, s.cog ?? s.hdg, s.sog, s.name, s.type, s.nav, s.dest, s.src]);
     if (name === 'hazards') return {
       quakes: f.quakes || [], eonet: f.eonet || [], gdacs: f.gdacs || [],
@@ -144,7 +175,8 @@ class Engine extends EventEmitter {
 }
 
 function layerOf(feedId) {
-  return { mil_air: 'air', air_density: 'air', ais_baltic: 'ships', quakes: 'hazards', eonet: 'hazards', gdacs: 'hazards', firms: 'hazards' }[feedId] || null;
+  return { mil_air: 'air', air_density: 'air', ais_baltic: 'ships', quakes: 'hazards', eonet: 'hazards', gdacs: 'hazards', firms: 'hazards',
+    gdelt_events: 'activity', gdelt_geo: 'activity', ioda: 'activity', cf_outages: 'activity', satellites: 'sats' }[feedId] || null;
 }
 
 module.exports = { Engine };
