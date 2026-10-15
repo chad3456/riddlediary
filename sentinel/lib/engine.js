@@ -160,9 +160,10 @@ class Engine extends EventEmitter {
     if (name === 'air') return this.airLayer().map((a) => [a.id, a.lat, a.lon, a.hdg, a.alt, a.spd, a.cs, a.type, a.reg, a.mil ? 1 : 0, a.sq, a.src,
       a.nacp ?? null, a.uav ? 1 : 0, a.gpsLost ? 1 : 0]);
     if (name === 'activity') return {
-      events: (f.gdelt_events || []).map((e) => [e.id, e.kind, e.lat, e.lon, e.place, e.code, e.actor1, e.actor2, e.articles, e.tone, e.ts, e.url, e.precise ? 1 : 0]),
+      events: (f.gdelt_events || []).map((e) => [e.id, e.kind, e.lat, e.lon, e.place, e.code, e.actor1, e.actor2, e.articles, e.tone, e.ts, e.url, e.precise ? 1 : 0, e.cc]),
       geo: Object.fromEntries(Object.entries(f.gdelt_geo || {}).map(([k, v]) => [k, v.points])),
       outages: this.outageLayer(),
+      advisories: Object.fromEntries(Object.entries(f.advisories || {}).map(([k, v]) => [k, { level: v.level }])),
     };
     if (name === 'sats') return f.satellites || [];
     if (name === 'ships') return this.state.ships.map((s) => [s.id, s.lat, s.lon, s.cog ?? s.hdg, s.sog, s.name, s.type, s.nav, s.dest, s.src]);
@@ -176,7 +177,7 @@ class Engine extends EventEmitter {
 
 function layerOf(feedId) {
   return { mil_air: 'air', air_density: 'air', ais_baltic: 'ships', quakes: 'hazards', eonet: 'hazards', gdacs: 'hazards', firms: 'hazards',
-    gdelt_events: 'activity', gdelt_geo: 'activity', ioda: 'activity', cf_outages: 'activity', satellites: 'sats' }[feedId] || null;
+    gdelt_events: 'activity', gdelt_geo: 'activity', ioda: 'activity', cf_outages: 'activity', advisories: 'activity', satellites: 'sats' }[feedId] || null;
 }
 
 module.exports = { Engine };

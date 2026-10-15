@@ -36,6 +36,7 @@
   --outage: #ff4fd8;
   --sat: #f2f6ff;
   --hud: #46c2ff;
+  --contested: #ffd166;
 
   --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --sans: 'IBM Plex Sans', system-ui, -apple-system, Segoe UI, sans-serif;
@@ -288,3 +289,27 @@ body.no-hud .hud { display: none; }
   .hud-bl, .hud-br, .hud-corner.bl, .hud-corner.br, .hud-tr, .hud-tl .dim { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .rec, .fx-overlay * { animation: none !important; } }
+
+/* ---------- geopolitics & orbits ---------- */
+.lens-legend { position: absolute; z-index: 640; left: 46px; bottom: 44px; max-width: min(560px, calc(100% - 92px)); background: rgba(8,11,15,.82); border: 1px solid var(--line-2); border-radius: 4px; padding: 6px 9px; font: 500 10.5px var(--mono); color: var(--text-secondary); pointer-events: none; }
+.lens-legend:empty { display: none; }
+.lg-t { font-weight: 600; color: var(--text-primary); letter-spacing: .06em; margin-bottom: 4px; }
+.lg-items, .legend-row { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.legend-row { margin: 0 0 6px; font: 500 10.5px var(--mono); color: var(--text-secondary); }
+.lg-i { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.lg-i i { width: 12px; height: 10px; border-radius: 2px; display: inline-block; }
+.lg-i i.nodata { background: transparent; border: 1px dashed var(--text-muted); }
+.sw-inline { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.base-mark { width: 9px; height: 9px; transform: translate(-50%, -50%); border: 2px solid; background: rgba(0,0,0,.6); }
+.datewrap { display: inline-flex; align-items: center; gap: 2px; }
+.datewrap input { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--line-2); border-radius: 3px; font: 500 11px var(--mono); padding: 3px 4px; color-scheme: dark; }
+.gantt { display: block; margin-top: 4px; }
+.gantt rect { cursor: crosshair; }
+.gantt rect:hover { stroke-width: 2.5; }
+.pass-tip { font-size: 10.5px; color: var(--text-secondary); margin-top: 6px; min-height: 28px; }
+.tbl tr.sel td { background: var(--surface-3); }
+#passSel { max-width: 100%; }
+@media (max-width: 960px) { .lens-legend { left: 16px; bottom: 120px; max-width: calc(100% - 32px); } }
+.mapwrap { overflow: hidden; }
+.viewctl { max-width: calc(100% - 96px); flex-wrap: wrap; justify-content: center; }
+@media (max-width: 1400px) { .viewctl select { max-width: 170px; } .fxpick > span { display: none; } }

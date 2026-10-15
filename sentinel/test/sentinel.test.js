@@ -125,3 +125,33 @@ test('live-activity fusion: unrest + outage raises a shutdown insight', async ()
   assert.ok(act.events.length > 0 && act.outages.some((o) => o.code === 'IR' && o.ongoing));
   assert.ok(e.result.parameters.length >= 1000);
 });
+
+test('client orbital analysis: classes, sun geometry, footprints, passes', async () => {
+  const satellite = require('satellite.js');
+  global.satellite = satellite; global.window = global.window || {};
+  require('../public/orbits.js');
+  const O = global.window.SentinelOrbits;
+  const iss = satellite.twoline2satrec('1 25544U 98067A   26285.50000000  .00016717  00000-0  10270-3 0  9993', '2 25544  51.6400 208.9163 0006317  69.9862  25.2906 15.49560532 12345');
+  assert.strictEqual(O.classify(iss).cls, 'LEO');
+  const [l1, l2] = demo.tle(40001, 0.05, 100, 0.0002, 0, 0, 1.00274);
+  assert.strictEqual(O.classify(satellite.twoline2satrec(l1, l2)).cls, 'GEO');
+  const sun = O.sun(new Date('2026-06-21T12:00:00Z'));
+  assert.ok(Math.abs(sun.lat - 23.44) < 0.3 && Math.abs(sun.lon) < 2, JSON.stringify(sun));
+  assert.ok(O.sunElevation(0, 0, new Date('2026-06-21T12:00:00Z')) > 60);
+  assert.ok(Math.abs(O.fieldOfRegardKm(500, 30) - 293) < 5);
+  const recs = [{ rec: iss, name: 'ISS', group: 'Test', orbit: O.classify(iss) }];
+  const p = O.passes(recs, 0, 0, { hours: 24 });
+  assert.ok(p.length > 0 && p.every((x) => x.los > x.aos && x.maxEl >= 10));
+}, { skip: (() => { try { require.resolve('satellite.js'); return false; } catch { return 'satellite.js not installed (dev-only)'; } })() });
+
+test('reference geopolitics: well-formed codes and shapes', () => {
+  global.window = global.window || {};
+  require('../public/data/geopolitics.js');
+  const R = global.window.GEOREF;
+  const iso = /^[A-Z]{2}$/;
+  for (const [k, b] of Object.entries(R.blocs)) for (const c of [...b.members, ...(b.partners || [])]) assert.match(c, iso, `${k}:${c}`);
+  assert.strictEqual(R.blocs.NATO.members.length, 32);
+  assert.strictEqual(R.blocs.EU.members.length, 27);
+  for (const c of R.contested) assert.ok(c.ring || c.line || c.at, c.id);
+  for (const b of R.bases) assert.ok(Math.abs(b.lat) <= 90 && Math.abs(b.lon) <= 180, b.name);
+});

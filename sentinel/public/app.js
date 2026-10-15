@@ -68,17 +68,53 @@
     summary: null, params: null, air: [], ships: [], hazards: { quakes: [], eonet: [], gdacs: [], fires: [] },
     versions: {}, tab: 'brief', drawer: null, kindFilter: 'All', paramQ: '', paramType: 'all', paramFlagged: false,
     vis: { choke: true, hot: true, milair: true, civair: true, ships: true, fires: true, quakes: true, eonet: true, gdacs: true,
-      unrest: true, kinetic: true, drones: true, gnss: true, outages: true, sats: true, lanes: true, newsgeo: false },
+      unrest: true, kinetic: true, drones: true, gnss: true, outages: true, sats: true, lanes: true, newsgeo: false,
+      countries: true, contested: true, bases: false, terminator: true, footprints: false },
     view: 'globe', activity: { events: [], geo: {}, outages: [] }, satRecs: [], sats: [], liveFilter: 'All', selSat: null,
+    lens: 'risk', bloc: 'NATO', extrude: false, countryStats: {}, country: null, imagery: 'night', imgDate: null,
+    satQ: '', satGroup: 'All', passTarget: null, passes: null, passTs: 0, follow: false,
   };
   try { S.view = localStorage.getItem('sentinel.view') || 'globe'; } catch { /* storage unavailable */ }
+  try { Object.assign(S, JSON.parse(localStorage.getItem('sentinel.geo') || '{}')); } catch { /* storage unavailable */ }
+  const saveGeo = () => { try { localStorage.setItem('sentinel.geo', JSON.stringify({ lens: S.lens, bloc: S.bloc, extrude: S.extrude, imagery: S.imagery })); } catch { /* ignore */ } };
   try { Object.assign(S.vis, JSON.parse(localStorage.getItem('sentinel.vis') || '{}')); } catch { /* storage unavailable */ }
   try { S.tab = localStorage.getItem('sentinel.tab') || 'brief'; } catch { /* storage unavailable */ }
 
   // ---------------- map ----------------
   const map = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 12, zoomSnap: 0.5, attributionControl: true }).setView([24, 45], 3);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 12,
+  // ---- imagery: dark cartography, or satellite imagery on both views ----
+  const yesterday = () => new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  const GIBS = (layer, date, level, ext) => (z, x, y) => `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level${level}/${z}/${y}/${x}.${ext}`;
+  const IMAGERY = {
+    night: { label: 'Night lights (globe) · dark map', globeTex: 'night' },
+    dark: { label: 'Dark cartography', globeTex: 'dark' },
+    marble: { label: 'Blue Marble (globe) · Esri map', globeTex: 'marble', map: 'esri' },
+    esri: { label: 'Esri World Imagery (high-res)', tiles: () => (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`, max: 17,
+      attr: 'Imagery © Esri, Maxar, Earthstar Geographics' },
+    s2: { label: 'Sentinel-2 cloudless (EOX, 2016)', tiles: () => (z, x, y) => `https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/${z}/${y}/${x}.jpg`, max: 14,
+      attr: '<a href="https://s2maps.eu">Sentinel-2 cloudless</a> by EOX (CC BY 4.0, contains Copernicus data)' },
+    modis: { label: 'NASA MODIS Terra true colour (daily)', dated: true, tiles: (d) => GIBS('MODIS_Terra_CorrectedReflectance_TrueColor', d, 9, 'jpg'), max: 9, attr: 'NASA GIBS / EOSDIS' },
+    viirs: { label: 'NASA VIIRS SNPP true colour (daily)', dated: true, tiles: (d) => GIBS('VIIRS_SNPP_CorrectedReflectance_TrueColor', d, 9, 'jpg'), max: 9, attr: 'NASA GIBS / EOSDIS' },
+    blackmarble: { label: 'NASA Black Marble night lights', tiles: () => GIBS('VIIRS_Black_Marble', '2016-01-01', 8, 'png'), max: 8, attr: 'NASA Black Marble / GIBS' },
+  };
+  const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 12,
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>' }).addTo(map);
+  let imageryLayer = null;
+  function applyImagery() {
+    const def = IMAGERY[S.imagery] || IMAGERY.night;
+    const date = S.imgDate || yesterday();
+    if (imageryLayer) { map.removeLayer(imageryLayer); imageryLayer = null; }
+    const mapDef = def.map ? IMAGERY[def.map] : def;
+    if (mapDef.tiles) {
+      const fn = mapDef.tiles(date);
+      const TL = L.TileLayer.extend({ getTileUrl: (c) => fn(c.z, c.x, c.y) });
+      imageryLayer = new TL('', { maxNativeZoom: mapDef.max, maxZoom: 12, attribution: mapDef.attr }).addTo(map);
+      imageryLayer.bringToBack(); cartoDark.setOpacity(0);
+    } else cartoDark.setOpacity(1);
+    const G = window.SentinelGlobe;
+    if (G) { if (def.tiles) { const fn = def.tiles(date); G.setTiles((x, y, l) => fn(l, x, y), Math.min(def.max, 12)); } else G.setTexture(def.globeTex); }
+    const dt = $('#imgDateWrap'); if (dt) dt.hidden = !def.dated;
+  }
   map.createPane('labels'); map.getPane('labels').style.zIndex = 390; map.getPane('labels').style.pointerEvents = 'none';
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', pane: 'labels', maxZoom: 12, opacity: 0.55 }).addTo(map);
 
@@ -128,7 +164,7 @@
     shipMil: css('--ship-mil'), shipOther: css('--ship-other'), fire: css('--fire'), quake: css('--quake'),
     good: css('--good'), guarded: css('--guarded'), warning: css('--warning'), serious: css('--serious'), critical: css('--critical'), muted: css('--text-muted'),
     protest: css('--protest'), riot: css('--riot'), kinetic: css('--kinetic'), clash: css('--clash'), drone: css('--drone'), gnss: css('--gnss'),
-    outage: css('--outage'), sat: css('--sat'), lane: css('--accent'),
+    outage: css('--outage'), sat: css('--sat'), lane: css('--accent'), contested: css('--contested'),
     geo_protest: css('--protest'), geo_shutdown: css('--outage'), geo_cyber: '#8be9fd', geo_jamming: css('--gnss'),
   });
   loadColors();
@@ -203,6 +239,7 @@
     choke: L.layerGroup(), hot: L.layerGroup(), quakes: L.layerGroup(), eonet: L.layerGroup(), gdacs: L.layerGroup(), focus: L.layerGroup().addTo(map),
     unrest: new GlyphLayer(drawEvent, 7), kinetic: new GlyphLayer(drawEvent, 7), drones: new GlyphLayer((c, p, it, z) => (it._t === 'geo' ? drawGeo(c, p, it) : drawUav(c, p, it, z)), 10),
     gnss: new GlyphLayer(drawGnss, 8), sats: new GlyphLayer(drawSat, 7), newsgeo: new GlyphLayer(drawGeo, 8), outages: L.layerGroup(), lanes: L.layerGroup(),
+    countries: L.layerGroup(), contested: L.layerGroup(), bases: L.layerGroup(), terminator: L.layerGroup(), footprints: L.layerGroup(),
   };
   const LAYER_META = [
     ['choke', 'Chokepoints', 'var(--accent)'], ['hot', 'Conflict theatres', 'var(--serious)'], ['milair', 'Military aircraft', 'var(--air-mil)'],
@@ -211,9 +248,11 @@
     ['unrest', 'Protests & riots', 'var(--protest)'], ['kinetic', 'Airstrikes & clashes', 'var(--kinetic)'], ['drones', 'Drones (UAV + reports)', 'var(--drone)'],
     ['gnss', 'GPS jamming / spoofing', 'var(--gnss)'], ['outages', 'Internet outages', 'var(--outage)'], ['sats', 'Recon satellites', 'var(--sat)'],
     ['lanes', 'Sea lanes', 'var(--accent)'], ['newsgeo', 'Geo-reports: protest/shutdown/cyber/EW', '#8be9fd'],
+    ['countries', 'Country lens (choropleth)', 'linear-gradient(90deg,var(--good),var(--warning),var(--critical))'], ['contested', 'Disputed areas & lines', 'var(--contested)'],
+    ['bases', 'Overseas military bases', '#9fb3c8'], ['terminator', 'Day / night terminator', '#0a1830'], ['footprints', 'Sensor footprints (LEO, ±30°)', 'var(--sat)'],
   ];
-  const LAYER_GROUPS = [['Theatres', ['choke', 'hot', 'lanes']], ['Live activity', ['unrest', 'kinetic', 'drones', 'gnss', 'outages', 'newsgeo']],
-    ['Tracks', ['milair', 'civair', 'ships', 'sats']], ['Hazards', ['fires', 'quakes', 'eonet', 'gdacs']]];
+  const LAYER_GROUPS = [['Geopolitics', ['countries', 'contested', 'bases']], ['Theatres', ['choke', 'hot', 'lanes']], ['Live activity', ['unrest', 'kinetic', 'drones', 'gnss', 'outages', 'newsgeo']],
+    ['Tracks', ['milair', 'civair', 'ships']], ['Space', ['sats', 'footprints', 'terminator']], ['Hazards', ['fires', 'quakes', 'eonet', 'gdacs']]];
   const applyVis = () => {
     for (const [k] of LAYER_META) { if (S.vis[k]) L_[k].addTo(map); else map.removeLayer(L_[k]); }
     window.SentinelGlobe?.setVis(S.vis);
@@ -316,8 +355,70 @@
     return pts;
   }
 
+  // ---------------- geopolitical lens ----------------
+  const GEOREF = window.GEOREF;
+  let countryGeo = null;
+  function lensStyle(props) {
+    const st = window.SentinelGeo.style(S.lens, S.countryStats[props.iso || props.name], S.bloc);
+    const max = { risk: 100, advisory: 4, unrest: 60, kinetic: 30, outages: 3, bloc: 2, sanctions: 3, nuclear: 3, satcov: 12 }[S.lens] || 1;
+    return { ...st, norm: st.v === undefined ? 0 : Math.min(1, st.v / max) };
+  }
+  function recomputeCountries() {
+    const G = window.SentinelGeo; if (!G?.features.length) return;
+    S.countryStats = G.stats({ summary: S.summary, events: S.events, outages: S.activity.outages, advisories: S.activity.advisories, sats: S.sats });
+    if (countryGeo) countryGeo.setStyle(mapCountryStyle);
+    window.SentinelGlobe?.setCountryStyle(lensStyle, S.extrude);
+    $('#lensLegend').innerHTML = G.legend(S.lens, S.bloc);
+    if (S.tab === 'geo') renderTab();
+    if (S.country) renderCountry();
+  }
+  // Coalesce bursts; recompute at most every 2 s.
+  const scheduleCountries = (() => { let t = null; let last = 0; return () => { if (t) return; t = setTimeout(() => { t = null; last = Date.now(); recomputeCountries(); }, Math.max(400, 2000 - (Date.now() - last))); }; })();
+  function mapCountryStyle(f) {
+    const st = lensStyle(f.properties); const sel = f.properties.iso && f.properties.iso === S.country;
+    return { color: sel ? '#ffffff' : 'rgba(170,190,210,0.35)', weight: sel ? 2 : 0.6, fillColor: st.fill || '#000', fillOpacity: st.fill ? (st.fill.startsWith('rgba') ? 1 : 0.5) : 0 };
+  }
+  async function initCountries() {
+    const G = window.SentinelGeo; if (!G) return;
+    try { await G.load(); } catch (e) { console.warn('countries', e); return; }
+    map.createPane('countries'); map.getPane('countries').style.zIndex = 350;
+    countryGeo = L.geoJSON({ type: 'FeatureCollection', features: G.features }, { pane: 'countries', style: mapCountryStyle,
+      onEachFeature: (f, layer) => {
+        layer.on('mouseover', (e) => { if (!glyphHit(e.containerPoint)) { layer.setStyle({ weight: 1.6, color: '#fff' }); showHover(countryHover(f.properties), e.containerPoint.x, e.containerPoint.y); } });
+        layer.on('mouseout', () => { countryGeo.resetStyle(layer); });
+        layer.on('click', (e) => { if (!glyphHit(e.containerPoint)) openCountry(f.properties.iso || f.properties.name); });
+      } }).addTo(L_.countries);
+    window.SentinelGlobe?.update('countries', G.features.map((f) => Object.assign(f, { _k: 'country' })));
+    // Reference layers
+    for (const c of GEOREF.contested) {
+      const col = COLORS.contested; const tip = `<div class="h" style="color:${col}">DISPUTED — ${esc(c.name)}</div><div>${esc(c.parties)}</div><div class="det muted">Approximate; for orientation only.</div>`;
+      const lyr = c.ring ? L.polygon(c.ring, { color: col, weight: 1.5, dashArray: '4 3', fillColor: col, fillOpacity: 0.15 })
+        : c.line ? L.polyline(c.line, { color: col, weight: 2, dashArray: c.dashed ? '6 6' : null })
+          : L.circleMarker(c.at, { radius: 6, color: col, weight: 2, fillOpacity: 0.2 });
+      lyr.bindPopup(tip).addTo(L_.contested);
+    }
+    for (const b of GEOREF.bases) {
+      const col = baseColor(b.operator);
+      L.marker([b.lat, b.lon], { icon: L.divIcon({ className: '', iconSize: [0, 0], html: `<div class="base-mark" style="border-color:${col}"></div>` }) })
+        .bindPopup(`<div class="h" style="color:${col}">${esc(b.name)}</div>${kv([['Operator', b.operator], ['Host', b.host], ['Position', `${b.lat.toFixed(2)}, ${b.lon.toFixed(2)}`]])}<div class="det muted">Reference: public reporting, approximate.</div>`)
+        .addTo(L_.bases);
+    }
+    window.SentinelGlobe?.update('contested', GEOREF.contested);
+    window.SentinelGlobe?.update('bases', GEOREF.bases.map((b) => ({ ...b, color: baseColor(b.operator) })));
+    recomputeCountries(); renderRail();
+  }
+  const baseColor = (op) => (/^US/.test(op) ? '#6fa8ff' : /^RU/.test(op) ? '#ff6b6b' : /^CN/.test(op) ? '#ffb347' : '#c9d4df');
+  function countryHover(p) {
+    const s = S.countryStats[p.iso || p.name] || {};
+    const st = window.SentinelGeo.style(S.lens, s, S.bloc);
+    const L = window.SentinelGeo.LENSES.find((x) => x.id === S.lens);
+    return `<div class="h">${esc(p.name)}</div>${kv([[L.label, st.label ?? 'no data'], ['Risk index', s.risk], ['Advisory', s.advisory ? `Level ${s.advisory}` : null], ['Unrest / kinetic 24h', s.unrest === null ? null : `${s.unrest} / ${s.kinetic}`],
+      ['Blocs', (s.blocs || []).join(', ') || null], ['Satellites overhead', s.satsOver]])}<div class="det muted">Click for country card</div>`;
+  }
+
   function renderEntitiesOnMap() {
     const sm = S.summary; if (!sm) return;
+    scheduleCountries();
     window.SentinelGlobe?.update('entities', [...sm.chokepoints, ...sm.hotspots]);
     renderLanes();
     L_.choke.clearLayers();
@@ -366,7 +467,7 @@
 
   function renderActivity() {
     const a = S.activity;
-    const ev = a.events.map(([id, kind, lat, lon, place, code, actor1, actor2, articles, tone, ts, url, precise]) => ({ _t: 'event', id, kind, lat, lon, place, code, actor1, actor2, articles, tone, ts, url, precise: !!precise }));
+    const ev = a.events.map(([id, kind, lat, lon, place, code, actor1, actor2, articles, tone, ts, url, precise, cc]) => ({ _t: 'event', id, kind, lat, lon, place, code, actor1, actor2, articles, tone, ts, url, precise: !!precise, cc }));
     S.events = ev;
     L_.unrest.setData(ev.filter((e) => e.kind === 'protest' || e.kind === 'riot'));
     L_.kinetic.setData(ev.filter((e) => e.kind === 'aerial' || e.kind === 'clash' || e.kind === 'mass'));
@@ -382,6 +483,7 @@
     const G = window.SentinelGlobe;
     if (G) { G.update('events', ev); G.update('geo', geo); G.update('outages', a.outages.map((o) => ({ ...o, _t: 'outage' }))); }
     updateDrones();
+    scheduleCountries();
   }
   function updateDrones() {
     const geo = (S.activity.geo?.drone || []).map((p) => ({ ...p, _t: 'geo' }));
@@ -391,7 +493,7 @@
   // ---------------- satellites (SGP4 in the browser) ----------------
   function loadSatRecs(list) {
     if (typeof satellite === 'undefined') return;
-    S.satRecs = list.map((t) => { try { const rec = satellite.twoline2satrec(t.l1, t.l2); return rec.error ? null : { rec, name: t.name, group: t.group, norad: t.l1.slice(2, 7).trim() }; } catch { return null; } }).filter(Boolean);
+    S.satRecs = list.map((t) => { try { const rec = satellite.twoline2satrec(t.l1, t.l2); return rec.error ? null : { rec, name: t.name, group: t.group, norad: t.l1.slice(2, 7).trim(), orbit: window.SentinelOrbits.classify(rec) }; } catch { return null; } }).filter(Boolean);
     propagateSats();
   }
   function satAt(s, when) {
@@ -404,10 +506,13 @@
   function propagateSats() {
     if (!S.satRecs.length) return;
     const now = new Date();
-    S.sats = S.satRecs.map((s) => { const p = satAt(s, now); return p && Number.isFinite(p.lat) ? { _t: 'sat', name: s.name, group: s.group, norad: s.norad, ...p } : null; }).filter(Boolean);
+    S.sats = S.satRecs.map((s) => { const p = satAt(s, now); return p && Number.isFinite(p.lat) ? { _t: 'sat', name: s.name, group: s.group, norad: s.norad, orbit: s.orbit.cls, sso: s.orbit.sso, ...p } : null; }).filter(Boolean);
     L_.sats.setData(S.sats);
+    if (Date.now() - (S.fpTs || 0) > 10_000) { S.fpTs = Date.now(); renderFootprints(); }
+    if (S.follow && S.selSat) { const cur = S.sats.find((x) => x.name === S.selSat.name); if (cur) { if (S.view === 'globe') window.SentinelGlobe?.flyTo(cur.lat, cur.lon, 1.6); else map.panTo([cur.lat, cur.lon]); } }
     window.SentinelGlobe?.update('sats', S.sats);
     if (S.selSat) selectSat(S.selSat, true);
+    if (Date.now() - (S.covTs || 0) > 8000 && S.lens === 'satcov') { S.covTs = Date.now(); recomputeCountries(); }
   }
   function selectSat(sat, quiet) {
     const s = S.satRecs.find((x) => x.name === sat.name); if (!s) return;
@@ -420,6 +525,27 @@
     for (let i = 0; i < pts.length; i++) { if (i && Math.abs(pts[i][1] - pts[i - 1][1]) > 180) segs.push([]); segs[segs.length - 1].push([pts[i][0], pts[i][1]]); }
     for (const seg of segs) L.polyline(seg, { color: '#ffffff', weight: 1, opacity: 0.7, dashArray: '4 4', interactive: false }).addTo(L_.focus);
     if (!quiet) toast(`Ground track: ${sat.name} (next 100 min)`);
+  }
+  function renderFootprints() {
+    const O = window.SentinelOrbits; const fps = [];
+    L_.footprints.clearLayers();
+    if (!S.vis.footprints) { window.SentinelGlobe?.update('footprints', []); return; }
+    for (const s of S.sats.filter((x) => x.orbit === 'LEO' && x.group !== 'GNSS')) {
+      const km = O.fieldOfRegardKm(s.altKm, 30);
+      const col = s.group === 'Military' ? 'rgba(255,255,255,0.55)' : s.group === 'Radar calibration' ? 'rgba(139,233,253,0.5)' : 'rgba(255,214,140,0.5)';
+      fps.push({ pts: O.circle(s.lat, s.lon, km, 36).map(([a, b]) => [a, b, 0.0015]), color: col });
+      L.circle([s.lat, s.lon], { radius: km * 1000, color: col, weight: 1, fill: false, interactive: false }).addTo(L_.footprints);
+    }
+    window.SentinelGlobe?.update('footprints', fps);
+  }
+  function renderTerminator() {
+    const ring = window.SentinelOrbits.nightRing(new Date());
+    L_.terminator.clearLayers();
+    // Draw three copies so the shading wraps with worldCopyJump.
+    for (const off of [-360, 0, 360]) L.polygon(ring.map(([a, b]) => [a, b + off]), { stroke: false, fillColor: '#000814', fillOpacity: 0.38, interactive: false }).addTo(L_.terminator);
+    const s = window.SentinelOrbits.sun(new Date());
+    L.circleMarker([s.lat, s.lon], { radius: 6, color: '#ffd166', weight: 2, fillColor: '#ffd166', fillOpacity: 0.6, interactive: false }).addTo(L_.terminator);
+    window.SentinelGlobe?.update('night', ring);
   }
   function satsOverhead(lat, lon, km = 1500) {
     const r = Math.PI / 180;
@@ -473,7 +599,8 @@
       ships: S.ships.length, fires: S.hazards.fires.length, quakes: S.hazards.quakes.length, eonet: S.hazards.eonet.length, gdacs: S.hazards.gdacs.length,
       unrest: ev.filter((e) => e.kind === 'protest' || e.kind === 'riot').length, kinetic: ev.filter((e) => e.kind === 'aerial' || e.kind === 'clash' || e.kind === 'mass').length,
       drones: air.filter((a) => a.uav).length + (S.activity.geo?.drone || []).length, gnss: air.filter((a) => a.degraded).length, outages: S.activity.outages.length,
-      sats: S.sats.length, lanes: LANES.length, newsgeo: ['protest', 'shutdown', 'cyber', 'jamming'].reduce((n, t) => n + (S.activity.geo?.[t] || []).length, 0) };
+      sats: S.sats.length, lanes: LANES.length, countries: (window.SentinelGeo?.features || []).length, contested: GEOREF.contested.length, bases: GEOREF.bases.length,
+      terminator: 1, footprints: S.sats.filter((x) => x.orbit === 'LEO' && x.group !== 'GNSS').length, newsgeo: ['protest', 'shutdown', 'cyber', 'jamming'].reduce((n, t) => n + (S.activity.geo?.[t] || []).length, 0) };
     const meta = Object.fromEntries(LAYER_META.map((m) => [m[0], m]));
     $('#layers').innerHTML = LAYER_GROUPS.map(([g, keys]) => `<div class="lgroup">${g}</div>` + keys.map((k) => { const [, name, col] = meta[k]; return `<label class="layer-row"><input type="checkbox" data-layer="${k}" ${S.vis[k] ? 'checked' : ''}>
       <span class="sw" style="background:${col}"></span><span class="name">${name}</span><span class="n">${fmt(counts[k] ?? 0)}</span></label>`; }).join('')).join('');
@@ -485,7 +612,7 @@
       <span class="nm">${esc(h.name)}<small>${esc(h.disabled ? `needs ${h.needsKey}` : h.ok ? h.source : (h.lastError || 'waiting…'))}</small></span>
       <span class="ct">${h.ok ? `${fmt(h.count)}<br>${ago(h.lastOk)}` : h.disabled ? 'off' : '—'}</span></div>`).join('');
   }
-  $('#layers').addEventListener('change', (e) => { const k = e.target.dataset.layer; if (k) { S.vis[k] = e.target.checked; applyVis(); } });
+  $('#layers').addEventListener('change', (e) => { const k = e.target.dataset.layer; if (k) { S.vis[k] = e.target.checked; applyVis(); if (k === 'footprints') renderFootprints(); } });
   $('#railToggle').addEventListener('click', () => $('#rail').classList.toggle('open'));
 
   function renderTicker() {
@@ -510,7 +637,11 @@
     if (!sm) { body.innerHTML = '<div class="muted">Connecting to fusion engine…</div>'; return; }
     const keepScroll = body.scrollTop;
     const focused = document.activeElement && body.contains(document.activeElement) ? document.activeElement.id : null;
-    body.innerHTML = ({ brief: tabBrief, live: tabLive, choke: tabChoke, theatres: tabTheatres, markets: tabMarkets, params: tabParams, intel: tabIntel, cyber: tabCyber }[S.tab] || tabBrief)(sm);
+    const html = ({ brief: tabBrief, live: tabLive, geo: tabGeo, orbits: tabOrbits, choke: tabChoke, theatres: tabTheatres, markets: tabMarkets, params: tabParams, intel: tabIntel, cyber: tabCyber }[S.tab] || tabBrief)(sm);
+    // Skip identical re-renders so hover state, focus and clicks are not disturbed by live updates.
+    if (html === S.lastTabHtml && !scrollTop) return;
+    S.lastTabHtml = html;
+    body.innerHTML = html;
     body.scrollTop = scrollTop ? 0 : keepScroll;
     if (focused) { const el = document.getElementById(focused); if (el) { el.focus(); if (el.setSelectionRange && el.value) el.setSelectionRange(el.value.length, el.value.length); } }
     if (S.tab === 'params' && !S.params) loadParams();
@@ -624,6 +755,88 @@
         <div class="ttl">${esc(e.title)}</div><div class="m">${esc(e.cat)} · ${e.now ? 'LIVE' : ago(e.t)} · ${esc(e.sub)}${e.url ? ` · <a target="_blank" rel="noopener" href="${esc(e.url)}">source ↗</a>` : ''}</div></div></div>`).join('') || '<div class="muted">Waiting for GDELT event stream (first files arrive within a minute; 24h backfill fills over ~45 min)…</div>'}`;
   }
 
+  function tabGeo() {
+    const G = window.SentinelGeo; if (!G?.features.length) return '<div class="muted">Loading country boundaries…</div>';
+    const L = G.LENSES.find((x) => x.id === S.lens);
+    const rows = Object.values(S.countryStats).map((s) => ({ s, st: G.style(S.lens, s, S.bloc) })).filter((r) => r.st.v).sort((a, b) => b.st.v - a.st.v || (b.s.risk ?? 0) - (a.s.risk ?? 0)).slice(0, 40);
+    return `<h3>Geopolitical lens</h3>
+      <div class="toolbar">${G.LENSES.map((l) => `<button class="chip ${S.lens === l.id ? 'on' : ''}" data-lens="${l.id}">${esc(l.label)}</button>`).join('')}</div>
+      ${S.lens === 'bloc' ? `<div class="toolbar">${Object.entries(GEOREF.blocs).map(([k, b]) => `<button class="chip ${S.bloc === k ? 'on' : ''}" data-bloc="${k}">${esc(k === 'OPEC' ? 'OPEC+' : k === 'QUAD' ? 'Quad/AUKUS' : k)}</button>`).join('')}</div>` : ''}
+      <p class="muted" style="font-size:12px;margin:0 0 8px">${esc(L.note)}${S.lens === 'bloc' && GEOREF.blocs[S.bloc].note ? ' ' + esc(GEOREF.blocs[S.bloc].note) + '.' : ''}</p>
+      <div class="toolbar"><button class="chip ${S.extrude ? 'on' : ''}" id="extrudeBtn">3D extrusion by value</button></div>
+      <h3 style="margin-top:12px">Ranking <span class="muted">${rows.length} countries with a value</span></h3>
+      <table class="tbl"><thead><tr><th>Country</th><th>${esc(L.label)}</th><th style="text-align:right">Risk idx</th></tr></thead><tbody>
+      ${rows.map(({ s, st }) => `<tr class="click" data-country="${esc(s.iso || s.name)}"><td>${esc(s.name)}</td><td><span class="sw-inline" style="background:${st.fill}"></span>${esc(st.label ?? '')}</td><td class="num">${s.risk ?? '—'}</td></tr>`).join('') || '<tr><td class="muted">No countries have a value for this lens yet.</td></tr>'}
+      </tbody></table>
+      <h3 style="margin-top:18px">Disputed areas <span class="muted">approximate · orientation only</span></h3>
+      ${GEOREF.contested.map((c) => { const [la, lo] = c.at || (c.ring || c.line)[0]; return `<div class="live-row" data-ref="${c.id}" data-lat="${la}" data-lon="${lo}"><span class="live-dot" style="background:var(--contested)"></span><div><div class="ttl">${esc(c.name)}</div><div class="m">${esc(c.parties)}</div></div></div>`; }).join('')}
+      <h3 style="margin-top:18px">Overseas military bases <span class="muted">reference</span></h3>
+      ${GEOREF.bases.map((b) => `<div class="live-row" data-ref="b" data-lat="${b.lat}" data-lon="${b.lon}"><span class="live-dot" style="background:${baseColor(b.operator)}"></span><div><div class="ttl">${esc(b.name)}</div><div class="m">${esc(b.operator)} in ${esc(b.host)}</div></div></div>`).join('')}`;
+  }
+
+  // ---------------- orbits tab: catalogue, classes, pass planner ----------------
+  function passTargets() {
+    const t = [];
+    for (const h of S.summary?.hotspots || []) t.push({ id: `h:${h.id}`, name: h.name, lat: h.lat, lon: h.lon });
+    for (const c of S.summary?.chokepoints || []) t.push({ id: `k:${c.id}`, name: c.name, lat: c.lat, lon: c.lon });
+    for (const s of Object.values(S.countryStats)) if (s.iso) t.push({ id: `c:${s.iso}`, name: s.name, lat: s.centroid.lat, lon: s.centroid.lon });
+    return t;
+  }
+  function runPasses() {
+    const t = passTargets().find((x) => x.id === S.passTarget) || passTargets()[0];
+    if (!t || !S.satRecs.length) return;
+    S.passTarget = t.id;
+    setTimeout(() => { S.passes = { t, list: computePasses(t.lat, t.lon, 12), at: Date.now() }; if (S.tab === 'orbits') renderTab(); }, 20);
+  }
+  const GROUP_COL = { Military: '#3987e5', 'Earth observation': '#d95926', 'Radar calibration': '#199e70' };
+  function gantt(list, t0) {
+    const rows = [...new Set(list.filter((p) => !p.persistent).map((p) => p.name))].slice(0, 28);
+    if (!rows.length) return '<div class="muted">No passes above 10° in the next 12 h.</div>';
+    const W = 420; const LBL = 112; const RH = 13; const H = rows.length * RH + 22; const span = 12 * 3600_000;
+    const x = (t) => LBL + ((t - t0) / span) * (W - LBL - 4);
+    let svg = `<svg class="gantt" viewBox="0 0 ${W} ${H}" width="100%" style="max-height:${H * 1.4}px">`;
+    for (let h = 0; h <= 12; h += 2) svg += `<line x1="${x(t0 + h * 3600_000)}" x2="${x(t0 + h * 3600_000)}" y1="0" y2="${H - 16}" stroke="var(--line)" stroke-width="1"/><text x="${x(t0 + h * 3600_000)}" y="${H - 4}" font-size="8" fill="var(--text-muted)" text-anchor="middle" font-family="IBM Plex Mono, monospace">+${h}h</text>`;
+    rows.forEach((n, i) => {
+      const y = i * RH;
+      svg += `<text x="${LBL - 6}" y="${y + 9}" font-size="8" fill="var(--text-secondary)" text-anchor="end" font-family="IBM Plex Mono, monospace">${esc(n.slice(0, 20))}</text>`;
+      for (const p of list.filter((q) => q.name === n && !q.persistent)) {
+        const c = GROUP_COL[p.group] || '#8a9bb0'; const w = Math.max(2, x(p.los) - x(p.aos));
+        const idx = list.indexOf(p);
+        svg += `<rect data-pi="${idx}" x="${x(p.aos)}" y="${y + 2}" width="${w}" height="${RH - 5}" rx="2" fill="${p.daylight ? c : 'transparent'}" stroke="${c}" stroke-width="1.5"/>`;
+      }
+    });
+    return svg + '</svg>';
+  }
+  function tabOrbits() {
+    if (!S.satRecs.length) return '<div class="muted">Waiting for CelesTrak TLEs…</div>';
+    const cls = {}; for (const s of S.sats) cls[s.orbit] = (cls[s.orbit] || 0) + 1;
+    const sso = S.sats.filter((s) => s.sso).length;
+    if (!S.passes) runPasses();
+    const P = S.passes;
+    const targets = passTargets();
+    const groups = ['All', ...new Set(S.satRecs.map((x) => x.group))];
+    const q = S.satQ.toLowerCase();
+    const cat = S.sats.filter((s) => (S.satGroup === 'All' || s.group === S.satGroup) && (!q || s.name.toLowerCase().includes(q) || String(s.norad).includes(q))).slice(0, 200);
+    const recBy = Object.fromEntries(S.satRecs.map((r) => [r.name, r]));
+    return `<div class="cards">${['LEO', 'MEO', 'GEO', 'HEO'].map((c) => `<div class="card"><div class="k">${c}</div><div class="v">${cls[c] || 0}</div></div>`).join('')}
+        <div class="card"><div class="k">Sun-synchronous</div><div class="v">${sso}</div></div><div class="card"><div class="k">Tracked</div><div class="v">${S.sats.length}</div></div></div>
+      <h3>Overhead pass planner <span class="muted">next 12 h · ≥10° elevation · SGP4</span></h3>
+      <div class="toolbar"><select id="passSel" aria-label="Pass target">${targets.map((t) => `<option value="${t.id}" ${t.id === S.passTarget ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
+      ${P ? `<div class="legend-row">${Object.entries(GROUP_COL).map(([g, c]) => `<span class="lg-i"><i style="background:${c}"></i>${g}</span>`).join('')}<span class="lg-i"><i style="background:transparent;border:1.5px solid var(--text-secondary)"></i>night pass (outline)</span></div>
+        ${gantt(P.list, P.at)}
+        <div class="pass-tip mono" id="passTip">Hover a bar for details. Filled = target in daylight (optical imaging possible).</div>
+        <table class="tbl" style="margin-top:8px"><thead><tr><th>AOS (UTC)</th><th>Satellite</th><th style="text-align:right">Max el</th><th>Light</th></tr></thead><tbody>
+        ${P.list.filter((p) => !p.persistent).slice(0, 25).map((p) => `<tr class="click" data-sat="${esc(p.name)}"><td class="mono">${new Date(p.aos).toISOString().slice(11, 16)}–${new Date(p.los).toISOString().slice(11, 16)}</td><td>${esc(p.name)} <span class="muted" style="font-size:10px">${esc(p.group)}${p.sso ? ' · SSO' : ''}</span></td><td class="num">${p.maxEl}°</td><td>${p.daylight ? '☀ day' : '☾ night'}</td></tr>`).join('')}
+        </tbody></table>
+        ${P.list.some((p) => p.persistent) ? `<div class="muted" style="font-size:11px;margin-top:6px">In view continuously (GEO): ${P.list.filter((p) => p.persistent).map((p) => esc(p.name)).join(', ')}</div>` : ''}` : '<div class="muted">Computing passes…</div>'}
+      <h3 style="margin-top:18px">Satellite catalogue <span class="muted">${cat.length} shown · click to track</span></h3>
+      <div class="toolbar"><input id="satq" type="search" placeholder="Name or NORAD id" value="${esc(S.satQ)}"><select id="satg">${groups.map((g) => `<option ${g === S.satGroup ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select>
+        <button class="chip ${S.follow ? 'on' : ''}" id="followBtn">Camera follows selected</button></div>
+      <table class="tbl"><thead><tr><th>Satellite</th><th>Orbit</th><th style="text-align:right">Alt km</th><th style="text-align:right">Incl</th><th style="text-align:right">Period</th></tr></thead><tbody>
+      ${cat.map((s) => { const o = recBy[s.name]?.orbit || {}; return `<tr class="click ${S.selSat?.name === s.name ? 'sel' : ''}" data-sat="${esc(s.name)}"><td>${esc(s.name)} <span class="muted" style="font-size:10px">${esc(s.group)}</span></td><td>${esc(o.cls || '')}${o.sso ? ' · SSO' : ''}</td><td class="num">${fmt(Math.round(s.altKm))}</td><td class="num">${o.inc ?? ''}°</td><td class="num">${o.period ?? ''} min</td></tr>`; }).join('')}
+      </tbody></table>`;
+  }
+
   function tabIntel(sm) {
     const all = [...sm.globalNews.map((a) => ({ ...a, tag: 'Global' }))];
     for (const e of [...sm.chokepoints, ...sm.hotspots]) for (const a of e.news || []) all.push({ ...a, tag: e.name });
@@ -667,7 +880,63 @@
     if (!S.params) loadParams();
     renderDrawer();
   }
-  function closeDrawer() { S.drawer = null; $('#drawer').hidden = true; L_.focus.clearLayers(); window.SentinelGlobe?.update('focus', null); }
+  function closeDrawer() { S.drawer = null; S.country = null; $('#drawer').hidden = true; L_.focus.clearLayers(); window.SentinelGlobe?.update('focus', null); window.SentinelGlobe?.selectCountry(null); if (countryGeo) countryGeo.setStyle(mapCountryStyle); }
+
+  function openCountry(iso) {
+    const s = S.countryStats[iso]; if (!s) return;
+    S.drawer = null; S.country = iso;
+    window.SentinelGlobe?.selectCountry(s.iso); if (countryGeo) countryGeo.setStyle(mapCountryStyle);
+    flyTo(s.centroid.lat, s.centroid.lon);
+    S.countryPasses = null; renderCountry();
+    setTimeout(() => { S.countryPasses = computePasses(s.centroid.lat, s.centroid.lon, 12); renderCountry(); }, 30);
+  }
+  function renderCountry() {
+    const s = S.countryStats[S.country]; if (!s) return;
+    const d = $('#drawer'); const st = d.scrollTop; d.hidden = false;
+    const lv = levelOf(s.risk);
+    const blocName = (k) => GEOREF.blocs[k].name;
+    const theatreEnts = (S.summary?.hotspots || []).filter((h) => (h.iso || []).includes(s.iso));
+    const passes = S.countryPasses;
+    const nextDayEO = passes?.find((p) => p.group === 'Earth observation' && p.daylight && !p.persistent);
+    const nextMil = passes?.find((p) => p.group === 'Military' && !p.persistent);
+    const nextRadar = passes?.find((p) => p.group === 'Radar calibration' && !p.persistent);
+    const when = (p) => (p ? `${new Date(p.aos).toISOString().slice(11, 16)}Z (in ${Math.max(0, Math.round((p.aos - Date.now()) / 60000))} min) · ${esc(p.name)} · max ${p.maxEl}°` : 'none in 12 h');
+    const sanc = ['—', 'Targeted', 'Extensive / sectoral', 'Comprehensive'][s.sanctions];
+    const nuke = ['—', 'NATO nuclear-sharing host', 'Nuclear-armed (non-NPT)', 'NPT nuclear-weapon state'][s.nuclear];
+    d.innerHTML = `<button class="back" id="back">← BACK</button>
+      <h2>${esc(s.name)}</h2><div class="lead">${esc(s.sub || s.cont || '')} · population ${fmt(s.pop)}</div>
+      <div style="display:flex;gap:10px;align-items:center">${pill(lv)}<span class="score s-${lv.status || 'null'}" style="font-size:24px">${s.risk ?? '—'}</span><span class="muted mono" style="font-size:11px">/100 country risk index · coverage ${s.coverage}%</span></div>
+      <section><h3>Why this index</h3>${s.riskComps.map(([n, w, v]) => `<div class="comp ${v === null ? 'na' : ''}"><span>${n} <span class="muted mono" style="font-size:10px">w${w}</span></span><span class="track"><i style="width:${v === null ? 0 : v * 100}%"></i></span><span class="pct">${v === null ? 'n/a' : Math.round(v * 100) + '%'}</span></div>`).join('')}</section>
+      <section><h3>Live signals <span class="muted">24h</span></h3><div class="cards">
+        <div class="card"><div class="k">Travel advisory</div><div class="v" style="font-size:15px">${s.advisory ? 'Level ' + s.advisory : '—'}</div></div>
+        <div class="card"><div class="k">Protest / riot events</div><div class="v" style="font-size:15px">${fmt(s.unrest)}</div></div>
+        <div class="card"><div class="k">Kinetic events</div><div class="v" style="font-size:15px">${fmt(s.kinetic)} <span class="muted" style="font-size:11px">${s.aerial ? `(${s.aerial} air)` : ''}</span></div></div>
+        <div class="card"><div class="k">Internet</div><div class="v" style="font-size:13px">${s.outageLevel === null ? '—' : ['normal', 'alerts', 'critical', 'ONGOING OUTAGE'][s.outageLevel]}</div></div>
+        <div class="card"><div class="k">Satellites overhead</div><div class="v" style="font-size:15px">${fmt(s.satsOver)}</div></div>
+        <div class="card"><div class="k">Conflict theatres</div><div class="v" style="font-size:13px">${theatreEnts.map((h) => `<a href="#" data-open-hs="${h.id}">${esc(h.name)}</a>`).join(', ') || '—'}</div></div>
+      </div></section>
+      <section><h3>Overhead satellite passes <span class="muted">next 12 h, centroid, ≥10° elevation</span></h3>
+        ${passes ? `<table class="tbl"><tbody>
+          <tr><td>Next daylight EO imaging pass</td><td class="mono" style="font-size:11px">${when(nextDayEO)}</td></tr>
+          <tr><td>Next military satellite pass</td><td class="mono" style="font-size:11px">${when(nextMil)}</td></tr>
+          <tr><td>Next radar-calibration pass</td><td class="mono" style="font-size:11px">${when(nextRadar)}</td></tr>
+          <tr><td>Total passes (all groups)</td><td class="mono">${passes.filter((p) => !p.persistent).length}${passes.some((p) => p.persistent) ? ` + ${passes.filter((p) => p.persistent).length} GEO in view` : ''}</td></tr>
+        </tbody></table><button class="chip" style="margin-top:8px" data-plan="${s.iso}">Open pass timeline →</button>` : '<div class="muted">Computing passes…</div>'}
+      </section>
+      <section><h3>Alignments <span class="muted">reference as of ${GEOREF.asOf}</span></h3><table class="tbl"><tbody>
+        <tr><td>Member of</td><td>${s.blocs.map(blocName).join(', ') || '—'}</td></tr>
+        <tr><td>Partner / candidate / observer</td><td>${s.partners.map(blocName).join(', ') || '—'}</td></tr>
+        <tr><td>Sanctions exposure</td><td>${sanc}</td></tr>
+        <tr><td>Nuclear status</td><td>${nuke}</td></tr>
+        <tr><td>Foreign bases hosted</td><td>${GEOREF.bases.filter((b) => b.host === s.iso).map((b) => `${esc(b.name)} (${esc(b.operator)})`).join('; ') || '—'}</td></tr>
+      </tbody></table></section>`;
+    d.scrollTop = st;
+    $('#back').onclick = closeDrawer;
+  }
+  function computePasses(lat, lon, hours) {
+    if (!S.satRecs.length || !window.SentinelOrbits) return [];
+    return window.SentinelOrbits.passes(S.satRecs.filter((x) => x.group !== 'GNSS'), lat, lon, { hours, minEl: 10 });
+  }
 
   function renderDrawer() {
     if (!S.drawer) return;
@@ -715,19 +984,41 @@
     if (chip) { S.kindFilter = chip.dataset.kind; renderTab(); return; }
     if (e.target.id === 'pf') { S.paramFlagged = !S.paramFlagged; renderTab(); return; }
     const ent = e.target.closest('.ent, tr.click');
-    if (ent && ent.dataset.kind !== 'global') { openEntity(ent.dataset.kind, ent.dataset.id); return; }
+    if (ent && ent.dataset.kind && ent.dataset.kind !== 'global') { openEntity(ent.dataset.kind, ent.dataset.id); return; }
     const ins = e.target.closest('.insight');
     if (ins) {
       const cp = findEntity('chokepoint', ins.dataset.entity); const hs = findEntity('hotspot', ins.dataset.entity);
       if (cp) openEntity('chokepoint', cp.id); else if (hs) openEntity('hotspot', hs.id);
       else if (ins.dataset.lat) flyTo(+ins.dataset.lat, +ins.dataset.lon);
     }
+    const hsLink = e.target.closest('[data-open-hs]'); if (hsLink) { e.preventDefault(); openEntity('hotspot', hsLink.dataset.openHs); return; }
+    const lensB = e.target.closest('[data-lens]'); if (lensB) { S.lens = lensB.dataset.lens; S.vis.countries = true; applyVis(); saveGeo(); recomputeCountries(); renderTab(); renderRail(); return; }
+    const blocB = e.target.closest('[data-bloc]'); if (blocB) { S.bloc = blocB.dataset.bloc; S.lens = 'bloc'; saveGeo(); recomputeCountries(); return; }
+    if (e.target.id === 'extrudeBtn') { S.extrude = !S.extrude; saveGeo(); recomputeCountries(); renderTab(); return; }
+    const cRow = e.target.closest('[data-country]'); if (cRow) { openCountry(cRow.dataset.country); return; }
+    const refRow = e.target.closest('[data-ref]'); if (refRow) { flyTo(+refRow.dataset.lat, +refRow.dataset.lon, true); return; }
+    const satRow = e.target.closest('[data-sat]'); if (satRow) { const sat = S.sats.find((x) => x.name === satRow.dataset.sat); if (sat) { selectSat(sat); flyTo(sat.lat, sat.lon); } return; }
+    const tgt = e.target.closest('[data-target]'); if (tgt) { S.passTarget = tgt.dataset.target; S.passes = null; renderTab(); runPasses(); return; }
+    if (e.target.id === 'followBtn') { S.follow = !S.follow; renderTab(); return; }
     const lv = e.target.closest('[data-live]');
     if (lv) { S.liveFilter = lv.dataset.live; renderTab(); return; }
     const row = e.target.closest('.live-row');
     if (row && !e.target.closest('a')) flyTo(+row.dataset.lat, +row.dataset.lon, true);
   });
+  $('#tabbody').addEventListener('mousemove', (e) => {
+    const r = e.target.closest?.('rect[data-pi]'); const tip = $('#passTip'); if (!tip || !S.passes) return;
+    if (!r) return;
+    const p = S.passes.list[+r.dataset.pi];
+    tip.innerHTML = `<b>${esc(p.name)}</b> · ${esc(p.group)}${p.sso ? ' · sun-synchronous' : ''} · AOS ${new Date(p.aos).toISOString().slice(11, 16)}Z · LOS ${new Date(p.los).toISOString().slice(11, 16)}Z · max ${p.maxEl}° at ${new Date(p.tMax).toISOString().slice(11, 16)}Z · ${p.daylight ? 'target in daylight' : 'target in darkness'}`;
+  });
+  $('#drawer').addEventListener('click', (e) => {
+    const hsLink = e.target.closest('[data-open-hs]'); if (hsLink) { e.preventDefault(); openEntity('hotspot', hsLink.dataset.openHs); return; }
+    const plan = e.target.closest('[data-plan]'); if (plan) { S.passTarget = `c:${plan.dataset.plan}`; S.passes = null; S.tab = 'orbits'; closeDrawer(); renderTab(true); runPasses(); }
+  });
   $('#tabbody').addEventListener('input', (e) => {
+    if (e.target.id === 'satq') { S.satQ = e.target.value; renderTab(); }
+    if (e.target.id === 'passSel') { S.passTarget = e.target.value; S.passes = null; renderTab(); runPasses(); }
+    if (e.target.id === 'satg') { S.satGroup = e.target.value; renderTab(); }
     if (e.target.id === 'pq') { S.paramQ = e.target.value; renderTab(); }
     if (e.target.id === 'pt') { S.paramType = e.target.value; renderTab(); }
   });
@@ -814,7 +1105,7 @@
     if (v === 'globe' && !globeOk) v = S.view = 'map';
     $('#globe').hidden = v !== 'globe'; $('#map').style.visibility = v === 'map' ? 'visible' : 'hidden';
     document.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
-    $('#texSel').hidden = v !== 'globe'; $('#rotBtn').hidden = v !== 'globe';
+    $('#rotBtn').hidden = v !== 'globe';
     window.SentinelGlobe?.setActive(v === 'globe');
     if (v === 'map') setTimeout(() => map.invalidateSize(), 50);
     hover.hidden = true;
@@ -828,6 +1119,9 @@
         onHover: (it, x, y) => { if (!it) { hover.hidden = true; return; } showHover(itemCard(it), x, y); },
         onClick: (it) => { if (it._t === 'sat') selectSat(it); else if (it._t === 'outage') toast(`${it.name}: ${it.ongoing ? 'ongoing outage' : `${it.alerts} outage alerts`}`); else showHover(itemCard(it) + extLink([it._t === 'ship' ? 'ships' : it._t === 'air' ? 'milair' : '', it]), 20, 20); },
         onCursor: (c) => setCursor(c?.lat, c?.lon),
+        onCountry: (p) => openCountry(p.iso || p.name),
+        onCountryHover: (p, x, y) => showHover(countryHover(p), x, y),
+        onRef: (d) => { if (d.kind === 'base') showHover(`<div class="h" style="color:${d.color}">${esc(d.name)}</div>${kv([['Operator', d.operator], ['Host', d.host]])}`, 20, 60); else if (d.parties) showHover(`<div class="h" style="color:${COLORS.contested}">DISPUTED — ${esc(d.name)}</div><div>${esc(d.parties)}</div><div class="det muted">Approximate; for orientation only.</div>`, 20, 60); },
         onAutoRotate: (on) => { $('#rotBtn').classList.toggle('on', on); },
       });
       $('#globe').dataset.ok = ok ? '1' : '0';
@@ -835,9 +1129,19 @@
     }
     setView(S.view);
     document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
-    let tex = 'night'; try { tex = localStorage.getItem('sentinel.tex') || 'night'; } catch { /* ignore */ }
-    $('#texSel').value = tex; G?.setTexture(tex);
-    $('#texSel').addEventListener('change', (e) => { G?.setTexture(e.target.value); try { localStorage.setItem('sentinel.tex', e.target.value); } catch { /* ignore */ } });
+    const imgSel = $('#imgSel');
+    imgSel.innerHTML = Object.entries(IMAGERY).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('');
+    if (!IMAGERY[S.imagery]) S.imagery = 'night';
+    imgSel.value = S.imagery;
+    imgSel.addEventListener('change', (e) => { S.imagery = e.target.value; saveGeo(); applyImagery(); toast(`Imagery: ${IMAGERY[S.imagery].label}`); });
+    const dateIn = $('#imgDate'); dateIn.value = yesterday(); dateIn.max = new Date().toISOString().slice(0, 10);
+    const setDate = (d) => { S.imgDate = d; dateIn.value = d; applyImagery(); };
+    dateIn.addEventListener('change', () => setDate(dateIn.value));
+    $('#imgPrev').addEventListener('click', () => setDate(new Date(Date.parse(dateIn.value) - 86_400_000).toISOString().slice(0, 10)));
+    $('#imgNext').addEventListener('click', () => { const n = new Date(Date.parse(dateIn.value) + 86_400_000).toISOString().slice(0, 10); if (n <= dateIn.max) setDate(n); });
+    applyImagery();
+    renderTerminator(); setInterval(renderTerminator, 60_000);
+    initCountries();
     $('#rotBtn').addEventListener('click', () => { const on = !$('#rotBtn').classList.contains('on'); $('#rotBtn').classList.toggle('on', on); G?.setAutoRotate(on); });
     $('#rotBtn').classList.add('on');
 

@@ -61,7 +61,7 @@ function parseExport(text) {
     const ts = Date.UTC(+a.slice(0, 4), +a.slice(4, 6) - 1, +a.slice(6, 8), +a.slice(8, 10), +a.slice(10, 12));
     const place = c[COL.place] || '';
     out.push({ id: c[COL.id], kind, code: c[COL.code], lat: +lat.toFixed(3), lon: +lon.toFixed(3), place,
-      country: place.split(', ').pop(), actor1: c[COL.a1] || null, actor2: c[COL.a2] || null,
+      country: place.split(', ').pop(), cc: c[COL.country] || null, actor1: c[COL.a1] || null, actor2: c[COL.a2] || null,
       articles: +c[COL.articles] || 1, sources: +c[COL.sources] || 1, tone: +(+c[COL.tone]).toFixed(1),
       goldstein: +c[COL.goldstein], precise: geoType === 3 || geoType === 4, ts, url: c[COL.url] || null });
   }

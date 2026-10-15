@@ -379,6 +379,12 @@ function analyze(state, history = {}) {
   G({ group: EVG, key: 'cf_gov', label: 'Government-directed shutdowns (7d)', value: f.cf_outages ? cfOut.filter((o) => /government/i.test(o.cause || '')).length : null, source: 'Cloudflare Radar',
     status: !f.cf_outages ? null : cfOut.some((o) => o.ongoing && /government/i.test(o.cause || '')) ? 'critical' : 'good' });
   const sats = f.satellites || [];
+  // Orbit regime from TLE line 2 (mean motion rev/day, eccentricity).
+  const orbitOf = (t) => { const mm = +t.l2.slice(52, 63); const ecc = +`0.${t.l2.slice(26, 33).trim()}`;
+    return ecc > 0.25 ? 'HEO' : mm > 0.95 && mm < 1.05 ? 'GEO' : mm > 11.25 ? 'LEO' : 'MEO'; };
+  for (const cls of ['LEO', 'MEO', 'GEO', 'HEO'])
+    G({ group: 'Space · overhead', key: `orbit_${cls}`, label: `Tracked satellites in ${cls}`, value: f.satellites ? sats.filter((x) => orbitOf(x) === cls).length : null, source: 'CelesTrak' });
+  G({ group: 'Space · overhead', key: 'orbit_sso', label: 'Sun-synchronous imaging orbits (LEO, 95–101° incl.)', value: f.satellites ? sats.filter((x) => orbitOf(x) === 'LEO' && +x.l2.slice(8, 16) > 95 && +x.l2.slice(8, 16) < 101).length : null, source: 'CelesTrak' });
   for (const grp of ['Military', 'Earth observation', 'Radar calibration', 'GNSS'])
     G({ group: 'Space · overhead', key: `sats_${grp}`, label: `Satellites tracked: ${grp}`, value: f.satellites ? sats.filter((x) => x.group === grp).length : null, source: 'CelesTrak' });
 

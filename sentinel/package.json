@@ -9,6 +9,11 @@
     "demo": "node server.js --demo",
     "test": "node --test test/*.test.js"
   },
-  "engines": { "node": ">=22" },
-  "license": "MIT"
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "satellite.js": "6.0.2"
+  }
 }

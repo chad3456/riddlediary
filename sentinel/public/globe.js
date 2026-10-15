@@ -9,7 +9,9 @@
   const TEXTURES = { night: 'earth-night.jpg', marble: 'earth-blue-marble.jpg', dark: 'earth-dark.jpg', day: 'earth-day.jpg' };
 
   let globe = null; let el; let ready = false; let active = false;
-  const D = { entities: [], air: [], ships: [], fires: [], events: [], geo: {}, outages: [], sats: [], quakes: [], gdacs: [], eonet: [], lanes: [], track: [], focus: null };
+  const D = { entities: [], air: [], ships: [], fires: [], events: [], geo: {}, outages: [], sats: [], quakes: [], gdacs: [], eonet: [], lanes: [], track: [], focus: null,
+    countries: [], countryStyle: () => ({ fill: null }), extrude: false, contested: [], bases: [], night: null, footprints: [], selCountry: null };
+  let hoverCountry = null;
   let vis = {}; let colors = {}; let cb = {};
   let pending = false;
 
@@ -26,9 +28,21 @@
       .showAtmosphere(true).atmosphereColor('#3a9bff').atmosphereAltitude(0.17)
       .showGraticules(true)
       // labels: chokepoints + theatres
-      .labelLat('lat').labelLng('lon').labelText((d) => `${ascii(d.name)}  ${d.score ?? ''}`).labelSize((d) => (d.kind === 'chokepoint' ? 0.55 : 0.5))
-      .labelDotRadius(0.32).labelColor((d) => statusCol(d.level?.status)).labelResolution(2).labelAltitude(0.004)
-      .onLabelClick((d) => cb.onEntity?.(d.kind, d.id))
+      .labelLat('lat').labelLng('lon').labelText((d) => (d.kind === 'chokepoint' || d.kind === 'hotspot' ? `${ascii(d.name)}  ${d.score ?? ''}` : ascii(d.name)))
+      .labelSize((d) => ({ chokepoint: 0.55, hotspot: 0.5, base: 0.32, contested: 0.42 }[d.kind] || 0.4))
+      .labelDotRadius((d) => (d.kind === 'base' ? 0.22 : 0.32)).labelColor((d) => (d.kind === 'base' ? d.color : d.kind === 'contested' ? colors.contested : statusCol(d.level?.status)))
+      .labelResolution(2).labelAltitude(0.004)
+      .onLabelClick((d) => (d.kind === 'chokepoint' || d.kind === 'hotspot' ? cb.onEntity?.(d.kind, d.id) : cb.onRef?.(d)))
+      // polygons: country choropleth, disputed areas, night side
+      .polygonGeoJsonGeometry('geometry').polygonCapColor(capColor).polygonSideColor(sideColor).polygonStrokeColor(strokeColor)
+      .polygonAltitude(polyAlt).polygonCapCurvatureResolution(3).polygonsTransitionDuration(250)
+      .onPolygonHover((d) => { hoverCountry = d && d._k === 'country' ? d : null; refreshPolys(); })
+      .onPolygonClick((d, ev, c) => {
+        const hit = c ? nearest(c.lat, c.lng) : null;
+        if (hit) cb.onClick?.(hit, ev);
+        else if (d._k === 'country') cb.onCountry?.(d.properties);
+        else if (d._k === 'contested') cb.onRef?.(d.ref);
+      })
       // rings: theatre pulses, quakes, outages, recent strikes
       .ringLat('lat').ringLng('lon').ringColor((d) => (t) => rgba(d.color, 1 - t)).ringMaxRadius('r').ringPropagationSpeed('speed').ringRepeatPeriod('period').ringAltitude(0.0025)
       // columns: kinetic events, outages, disaster alerts, geolocated drone reports
@@ -43,8 +57,8 @@
       .arcStartLat((d) => d.a.lat).arcStartLng((d) => d.a.lon).arcEndLat((d) => d.b.lat).arcEndLng((d) => d.b.lon).arcColor((d) => [rgba(d.color, 0.15), rgba(d.color, 0.9)])
       .arcDashLength(0.35).arcDashGap(0.15).arcDashAnimateTime(5000).arcStroke(0.35).arcAltitudeAutoScale(0.25)
       // paths: selected satellite ground track
-      .pathPoints('pts').pathPointLat((p) => p[0]).pathPointLng((p) => p[1]).pathPointAlt((p) => p[2]).pathColor(() => ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.9)']).pathStroke(1.2)
-      .pathDashLength(0.02).pathDashGap(0.004).pathDashAnimateTime(30000).pathTransitionDuration(0);
+      .pathPoints('pts').pathPointLat((p) => p[0]).pathPointLng((p) => p[1]).pathPointAlt((p) => p[2] ?? 0.002).pathColor('color').pathStroke('stroke')
+      .pathDashLength('dash').pathDashGap('gap').pathDashAnimateTime('anim').pathTransitionDuration(0);
 
     const ctl = globe.controls(); ctl.autoRotate = true; ctl.autoRotateSpeed = 0.25; ctl.enableDamping = true;
     el.addEventListener('pointerdown', () => { ctl.autoRotate = false; cb.onAutoRotate?.(false); });
@@ -56,12 +70,14 @@
       const c = globe.toGlobeCoords(e.clientX - r.left, e.clientY - r.top);
       cb.onCursor?.(c ? { lat: c.lat, lon: c.lng } : null);
       const hit = c ? nearest(c.lat, c.lng) : null;
-      cb.onHover?.(hit, e.clientX - r.left, e.clientY - r.top);
-      el.style.cursor = hit ? 'pointer' : '';
+      if (hit || !hoverCountry) cb.onHover?.(hit, e.clientX - r.left, e.clientY - r.top);
+      else cb.onCountryHover?.(hoverCountry.properties, e.clientX - r.left, e.clientY - r.top);
+      el.style.cursor = hit || hoverCountry ? 'pointer' : '';
     });
     el.addEventListener('mouseleave', () => cb.onHover?.(null));
     globe.onGlobeClick(({ lat, lng }, ev) => { const hit = nearest(lat, lng); if (hit) cb.onClick?.(hit, ev); });
     ready = true;
+    window.__sentinelGlobe = globe; // debugging handle
     return true;
   }
 
@@ -77,6 +93,42 @@
     return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
   }
   const statusCol = (s) => colors[s] || colors.muted;
+
+  // ---- polygon styling ----
+  function capColor(d) {
+    if (d._k === 'night') return 'rgba(0,3,12,0.42)';
+    if (d._k === 'contested') return 'rgba(255,209,102,0.22)';
+    const st = D.countryStyle(d.properties);
+    if (!st.fill) return 'rgba(0,0,0,0)';
+    const hov = d === hoverCountry || d.properties.iso === D.selCountry;
+    if (st.fill.startsWith('rgba')) return hov ? rgba(st.fill, 0.6) : st.fill; // already carries its own alpha
+    return rgba(st.fill, hov ? 0.95 : 0.62);
+  }
+  function sideColor(d) {
+    if (d._k !== 'country' || !D.extrude) return 'rgba(0,0,0,0)';
+    const st = D.countryStyle(d.properties); return st.fill ? rgba(st.fill, 0.35) : 'rgba(0,0,0,0)';
+  }
+  function strokeColor(d) {
+    if (d._k === 'night') return false;
+    if (d._k === 'contested') return colors.contested;
+    return d === hoverCountry || d.properties.iso === D.selCountry ? '#ffffff' : 'rgba(170,190,210,0.28)';
+  }
+  function polyAlt(d) {
+    if (d._k === 'night') return 0.0015;
+    if (d._k === 'contested') return 0.007;
+    const base = d === hoverCountry || d.properties.iso === D.selCountry ? 0.012 : 0.004;
+    if (!D.extrude) return base;
+    const st = D.countryStyle(d.properties);
+    return base + (st.norm ?? 0) * 0.06;
+  }
+  // Fresh closures each time: the layer only re-evaluates when the accessor reference changes.
+  function refreshPolys() { if (globe) globe.polygonCapColor((d) => capColor(d)).polygonSideColor((d) => sideColor(d)).polygonStrokeColor((d) => strokeColor(d)).polygonAltitude((d) => polyAlt(d)); }
+  // Rings must wind clockwise in lon/lat (as Natural Earth does); a counter-clockwise ring would fill the rest of the globe.
+  const toGeo = (ring) => {
+    const r = [...ring.map(([la, lo]) => [lo, la]), [ring[0][1], ring[0][0]]];
+    let a = 0; for (let i = 0; i < r.length - 1; i++) a += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1];
+    return { type: 'Polygon', coordinates: [a > 0 ? r.reverse() : r] };
+  };
   const unrestCol = (d) => (d.points.some((p) => p.kind === 'riot') ? colors.riot : colors.protest);
 
   // Visible, inspectable items for hover search.
@@ -111,7 +163,14 @@
     pending = false;
     if (!globe) return;
     const C = colors;
-    globe.labelsData(okAll([...(vis.choke ? D.entities.filter((e) => e.kind === 'chokepoint') : []), ...(vis.hot ? D.entities.filter((e) => e.kind === 'hotspot') : [])]));
+    globe.labelsData(okAll([...(vis.choke ? D.entities.filter((e) => e.kind === 'chokepoint') : []), ...(vis.hot ? D.entities.filter((e) => e.kind === 'hotspot') : []),
+      ...(vis.contested ? D.contested.map((c) => ({ ...c, kind: 'contested', lat: c.at ? c.at[0] : (c.ring || c.line)[0][0], lon: c.at ? c.at[1] : (c.ring || c.line)[0][1] })) : []),
+      ...(vis.bases ? D.bases.map((b) => ({ ...b, kind: 'base' })) : [])]));
+    const polys = [];
+    if (vis.countries) for (const f of D.countries) polys.push(f);
+    if (vis.contested) for (const c of D.contested.filter((x) => x.ring)) polys.push({ _k: 'contested', ref: c, geometry: toGeo(c.ring) });
+    if (vis.terminator && D.night) polys.push({ _k: 'night', geometry: toGeo(D.night) });
+    globe.polygonsData(polys);
 
     const rings = [];
     if (vis.hot) for (const h of D.entities.filter((e) => e.kind === 'hotspot' && e.score >= 40)) rings.push({ lat: h.lat, lon: h.lon, color: statusCol(h.level.status), r: 2 + h.score / 25, speed: 1.2, period: 1600 });
@@ -146,7 +205,15 @@
     globe.particlesData(P);
 
     globe.arcsData(vis.lanes ? D.lanes : []);
-    globe.pathsData(D.track.length ? [{ pts: D.track.filter((p) => p.every(Number.isFinite)) }] : []);
+    const paths = [];
+    if (D.track.length) {
+      const pts = D.track.filter((p) => p.every(Number.isFinite));
+      paths.push({ pts, color: ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.95)'], stroke: 1.4, dash: 0.02, gap: 0.004, anim: 30000 });
+      paths.push({ pts: pts.map(([a, b]) => [a, b, 0.002]), color: 'rgba(255,255,255,0.45)', stroke: 0.6, dash: 0.01, gap: 0.01, anim: 0 });
+    }
+    if (vis.contested) for (const c of D.contested.filter((x) => x.line)) paths.push({ pts: c.line, color: colors.contested, stroke: 1.1, dash: c.dashed ? 0.02 : 1, gap: c.dashed ? 0.015 : 0, anim: 0 });
+    if (vis.footprints) for (const fp of D.footprints) paths.push({ pts: fp.pts, color: fp.color, stroke: 0.5, dash: 1, gap: 0, anim: 0 });
+    globe.pathsData(paths);
   }
 
   function update(part, value) { D[part] = value; schedule(); }
@@ -157,9 +224,14 @@
     if (on) { globe.width(el.clientWidth).height(el.clientHeight); globe.resumeAnimation?.(); schedule(); } else globe.pauseAnimation?.();
   }
   function flyTo(lat, lon, alt = 1.1) { if (globe) { globe.pointOfView({ lat, lng: lon, altitude: alt }, 1200); globe.controls().autoRotate = false; cb.onAutoRotate?.(false); } }
-  function setTexture(k) { if (globe && TEXTURES[k]) globe.globeImageUrl(TEX + TEXTURES[k]); }
+  function setTexture(k) { if (globe && TEXTURES[k]) globe.globeTileEngineUrl(null).globeImageUrl(TEX + TEXTURES[k]); }
+  // Slippy-map imagery (Web Mercator XYZ) streamed onto the globe at the current zoom.
+  function setTiles(urlFn, maxLevel) { if (globe) globe.globeTileEngineMaxLevel(maxLevel).globeTileEngineUrl(urlFn); }
+  function setCountryStyle(fn, extrude) { D.countryStyle = fn; D.extrude = !!extrude; refreshPolys(); }
+  function selectCountry(iso) { D.selCountry = iso; refreshPolys(); }
   function setAutoRotate(on) { if (globe) globe.controls().autoRotate = on; }
   function altitude() { return globe ? globe.pointOfView().altitude : null; }
 
-  window.SentinelGlobe = { init, update, setVis, setActive, flyTo, setTexture, setAutoRotate, altitude, kmToAlt };
+  window.SentinelGlobe = { init, update, setVis, setActive, flyTo, setTexture, setTiles, setCountryStyle, selectCountry, setAutoRotate, altitude, kmToAlt,
+    pointOfView: () => globe?.pointOfView() };
 })();

@@ -174,8 +174,9 @@ function respond(url) {
     const lines = [];
     for (let i = 0; i < n; i++) {
       const no = 40000 + ({ military: 0, resource: 1000, radar: 2000, gnss: 3000 }[g] || 0) + i;
-      const [inc, mm] = g === 'gnss' ? [55, 2.0056] : g === 'military' && i % 5 === 0 ? [63.4, 2.006] : [97.5 + rnd(), 14.8 + rnd() * 0.6];
-      lines.push(`DEMO-${g.toUpperCase()} ${i}`, ...tle(no, inc, rnd() * 360, g === 'military' && i % 5 === 0 ? 0.7 : 0.001, rnd() * 360, rnd() * 360, mm));
+      const geo = g === 'military' && i % 7 === 3;
+      const [inc, mm] = g === 'gnss' ? [55, 2.0056] : geo ? [0.05, 1.00274] : g === 'military' && i % 5 === 0 ? [63.4, 2.006] : [97.5 + rnd(), 14.8 + rnd() * 0.6];
+      lines.push(`DEMO-${g.toUpperCase()} ${i}`, ...tle(no, inc, geo ? (i * 37) % 360 : rnd() * 360, geo ? 0.0002 : g === 'military' && i % 5 === 0 ? 0.7 : 0.001, rnd() * 360, rnd() * 360, mm));
     }
     return text(lines.join('\n'));
   }
@@ -198,6 +199,7 @@ const binary = (buf) => ({ ok: true, status: 200, text: async () => buf.toString
 const EV_MIX = { ukraine: { '195': 6, '190': 4, '193': 3, '1412': 1 }, sudan: { '195': 3, '193': 5, '202': 1 }, gaza: { '195': 4, '190': 2, '141': 2 },
   iran: { '141': 9, '145': 4, '1411': 2 }, kashmir: { '141': 4, '145': 2 }, venezuela: { '141': 6, '145': 2 }, haiti: { '145': 3, '193': 2 },
   myanmar: { '195': 2, '193': 3 }, sahel: { '193': 2, '195': 1, '141': 2 }, lebanon: { '195': 2 }, yemen: { '195': 2, '190': 1 }, korea: { '141': 1 } };
+const DEMO_FIPS = { ukraine: 'UP', sudan: 'SU', gaza: 'GZ', iran: 'IR', kashmir: 'IN', venezuela: 'VE', haiti: 'HA', myanmar: 'BM', sahel: 'ML', lebanon: 'LE', yemen: 'YM', korea: 'KS' };
 function gdeltExport(stamp) {
   const rows = [];
   let k = 0;
@@ -209,7 +211,7 @@ function gdeltExport(stamp) {
       c[0] = `${stamp}${String(k++).padStart(4, '0')}`; c[1] = stamp.slice(0, 8);
       c[6] = pick(['PROTESTER', 'MILITARY', 'POLICE', 'REBEL', 'GOVERNMENT', '']); c[16] = pick(['CIVILIAN', 'MILITARY', '']);
       c[25] = '1'; c[26] = code; c[27] = code.slice(0, 3); c[28] = code.slice(0, 2); c[30] = '-9'; c[31] = '4'; c[32] = '2'; c[33] = String(1 + Math.floor(rnd() * 8)); c[34] = (-4 - rnd() * 6).toFixed(2);
-      c[51] = '4'; c[52] = `Demo locality ${i}, ${hs.countries[0]}`; c[53] = 'XX';
+      c[51] = '4'; c[52] = `Demo locality ${i}, ${hs.countries[0]}`; c[53] = DEMO_FIPS[id] || 'XX';
       c[56] = (hs.lat + (rnd() - 0.5) * 4).toFixed(4); c[57] = (hs.lon + (rnd() - 0.5) * 5).toFixed(4);
       c[59] = stamp; c[60] = 'https://example.org/demo-event';
       rows.push(c.join('\t'));

@@ -8,6 +8,25 @@ writes explainable insights when something crosses a threshold.
 - **3D globe or 2D map.** The globe (globe.gl / three.js) shows extruded incident columns, protest hex-bins, pulsing theatres, animated sea lanes, aircraft at flight level, ships, and satellites at orbital altitude. The 2D map (Leaflet) shows the same layers.
 - **24 sensor-style visual modes plus a spy-style HUD.** Modes include night vision, thermal palettes, SAR, radar and EW jamming (full list below). Keys `1–0` and `q…f` switch modes; `[` and `]` cycle through them.
 - **Live activity.** Protests, riots, airstrikes and drone strikes, and armed clashes come from GDELT's 15-minute event stream. Also shown: UAVs broadcasting ADS-B, GPS jamming and spoofing inferred from aircraft navigation accuracy, internet outages with their causes, and geolocated drone, shutdown, cyber and jamming reports.
+- **Geopolitical lenses.** Countries are coloured by a choice of lens on both the globe and the map, and can be extruded in 3D:
+  - country risk index
+  - US travel advisory
+  - civil unrest
+  - kinetic activity
+  - internet outages
+  - alliances and blocs (NATO, EU, CSTO, SCO, BRICS, GCC, ASEAN, AES, OPEC+, Quad/AUKUS, Five Eyes)
+  - sanctions exposure
+  - nuclear status
+  - live satellite coverage
+
+  The map also shows disputed areas and lines, and 38 overseas military bases. Clicking any country opens a card with its signals, alignments and upcoming satellite passes.
+- **Satellite mapping.** Choose from these imagery sources on the globe and the map:
+  - NASA GIBS MODIS and VIIRS true colour (daily, with a date picker)
+  - NASA Black Marble night lights
+  - Esri World Imagery
+  - Sentinel-2 cloudless
+
+  Also on the map: a live day/night terminator with the subsolar point, and the ±30° off-nadir field of regard for every LEO imaging or military satellite. The Orbits tab has the LEO/MEO/GEO/HEO and sun-synchronous breakdown, a searchable catalogue with camera-follow, and a 12-hour **overhead-pass planner**. The planner is a Gantt chart showing which satellites will pass over any theatre, chokepoint or country, and whether the target will be in daylight (that is, whether optical imaging is possible).
 - **1,000+ tracked parameters.** 14 chokepoints × 27, 20 theatres × 26, plus 110–135 global indicators (the count depends on how many countries have events). The header shows how many are live right now.
 - **20 independent sources.** If one fails, the rest of the board keeps working, and the Sources panel shows each source's state, item count, last success and last error.
 - **Live updates.** The server polls each source on its own schedule and pushes version bumps over Server-Sent Events. The browser then pulls only the layer that changed.
@@ -16,6 +35,10 @@ writes explainable insights when something crosses a threshold.
 ![SENTINEL 3D globe (demo data)](docs/screenshot-globe.png)
 
 ![Visual modes: thermal ironbow, radar sweep, EW jamming, CRT, SAR (demo data)](docs/screenshot-modes.png)
+
+![Geopolitical lens: NATO membership with disputed areas (demo data)](docs/screenshot-geo.png)
+
+![Orbits tab: overhead-pass planner (demo data)](docs/screenshot-orbits.png)
 
 ## Run
 
@@ -84,6 +107,28 @@ Docker: `docker build -t sentinel sentinel && docker run -p 8080:8080 --env-file
 
 Each mode is an SVG or CSS filter applied to the rendered map or globe, plus optional overlays (scanlines, sensor noise, vignette, radar sweep, range rings, glitch tears, data rain). The modes are cosmetic and do not change the data. With `prefers-reduced-motion` set, the animations are switched off.
 
+## Geopolitical & satellite mapping
+
+| Lens | Data | Notes |
+|---|---|---|
+| Country risk index | Theatre score 30, travel advisory 25, kinetic events 20, unrest 15, outages 10 | Renormalised over available signals; the card shows "why this index" |
+| Travel advisory | US State Dept | Levels 1–4 |
+| Civil unrest / kinetic | GDELT events (joined by FIPS country code) | 24h counts, binned |
+| Internet outages | IODA + Cloudflare Radar | alerts / critical / ongoing |
+| Alliances & blocs, sanctions, nuclear | `public/data/geopolitics.js` | Reference as of 2026-10. Verify sanctions with OFAC and the EU Sanctions Map |
+| Satellites overhead now | CelesTrak + SGP4 | Satellites within 1,500 km of the country centroid, refreshed every few seconds |
+
+Country boundaries come from Natural Earth 1:110m (public domain). Disputed-area shapes are approximate, for orientation only, and do not endorse any claim.
+
+| Imagery | Source | Licence / notes |
+|---|---|---|
+| MODIS Terra / VIIRS SNPP true colour | NASA GIBS (daily; date picker, defaults to yesterday UTC) | Open, cite NASA EOSDIS |
+| Black Marble night lights | NASA GIBS | Open |
+| World Imagery | Esri | Attribution required; check Esri terms for heavy or commercial use |
+| Sentinel-2 cloudless 2016 | EOX | CC BY 4.0 |
+
+**Pass prediction.** SGP4 propagation from CelesTrak TLEs at 60-second steps over the next 12 h. A pass counts when the satellite is ≥10° above the target's horizon. "Daylight" means the sun is above the target's horizon at maximum elevation. GEO satellites in view are listed as persistent. Footprints show where a sensor *could* image if it slews ±30° off-nadir; they are not actual tasking. Real tasking, sensor modes and manoeuvres are not public.
+
 ## How scoring works
 
 Each chokepoint and theatre gets a 0–100 **composite risk score**. The score is a weighted sum of normalised components:
@@ -143,5 +188,8 @@ sentinel/
   public/app.js      panels, 2D map (Leaflet canvas glyph layers), satellites (SGP4)
   public/globe.js    3D globe view
   public/fx.js       visual modes and overlays
+  public/geo.js      geopolitical lenses (country stats, choropleth styles, legends)
+  public/orbits.js   orbit classes, sun/terminator, footprints, pass prediction
+  public/data/       Natural Earth countries (110m) + geopolitical reference data
   test/              node:test suite
 ```
